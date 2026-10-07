@@ -227,11 +227,11 @@ export function Home() {
           <p className="text-gray-500 text-sm max-w-md mx-auto" style={SANS}>A selection of our finest hand-poured oils, offering unparalleled scent longevity.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {PRODUCTS.filter((p) => p.category === "Oil").map((p) => (
+          {products.filter((p) => p.category === "Oil").map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
           {/* Pad with standard products */}
-          {PRODUCTS.filter((p) => p.category === "Perfume").slice(4, 6).map((p) => (
+          {products.filter((p) => p.category === "Perfume").slice(4, 6).map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
         </div>

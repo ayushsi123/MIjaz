@@ -56,14 +56,14 @@ export default function App() {
           setProducts(liveProducts);
         } else {
           // If Firestore is empty, load hardcoded products into Zustand
-          const { PRODUCTS } = await import("../data/products");
-          setProducts(PRODUCTS);
+          const { INITIAL_PRODUCTS } = await import("../data/products");
+          setProducts(INITIAL_PRODUCTS);
         }
         setProductsLoaded(true);
       } catch (err) {
         console.error("Firebase product sync failed, using static fallbacks:", err);
-        const { PRODUCTS } = await import("../data/products");
-        setProducts(PRODUCTS);
+        const { INITIAL_PRODUCTS } = await import("../data/products");
+        setProducts(INITIAL_PRODUCTS);
         setProductsLoaded(true);
       }
     };

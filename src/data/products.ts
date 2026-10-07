@@ -276,9 +276,8 @@ export const COLLECTIONS_LINKS = [
   "Perfumes", "Oils"
 ];
 
-// Async simulation helpers for future API/CMS binding
 export const getProducts = async (): Promise<Product[]> => {
-  return new Promise((resolve) => setTimeout(() => resolve(PRODUCTS), 100));
+  return new Promise((resolve) => setTimeout(() => resolve(INITIAL_PRODUCTS), 100));
 };
 
 export const getProductById = async (id: number | string, products: Product[]): Promise<Product | undefined> => {
