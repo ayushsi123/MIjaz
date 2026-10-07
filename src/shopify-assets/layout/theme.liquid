@@ -1,0 +1,131 @@
+<!doctype html>
+<html class="no-js" lang="{{ request.locale.iso_code }}">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="canonical" href="{{ canonical_url }}">
+    
+    <title>
+      {{ page_title }}
+      {%- if current_tags %} &ndash; tagged "{{ current_tags | join: ', ' }}"{% endif -%}
+      {%- if current_page != 1 %} &ndash; Page {{ current_page }}{% endif -%}
+      {%- unless page_title contains shop.name %} &ndash; {{ shop.name }}{% endunless -%}
+    </title>
+
+    {% if page_description %}
+      <meta name="description" content="{{ page_description | escape }}">
+    {% endif %}
+
+    {{ content_for_header }}
+
+    <!-- Load Custom Mijaz Styles -->
+    {{ 'base.css' | asset_url | stylesheet_tag }}
+  </head>
+
+  <body class="bg-[#FAF8F4] text-gray-800 antialiased" style="font-family: 'DM Sans', sans-serif;">
+    
+    <!-- Announcement Bar -->
+    <div class="bg-[#800000] text-white py-2 text-center text-[10px] font-semibold tracking-widest uppercase" style="font-family: 'DM Sans', sans-serif;">
+      Free Shipping above 999 INR | FLAT 10% OFF On Orders above 2499 INR (Automatically Applied) | COD Eligible Above 999 INR
+    </div>
+
+    <!-- Header Navigation -->
+    <header class="border-b border-gray-100 bg-white sticky top-0 z-50 shadow-xs">
+      <div class="max-w-[1440px] mx-auto px-6 h-[68px] flex items-center justify-between">
+        
+        <!-- Left Side: Logo + Navigation Links -->
+        <div class="flex items-center gap-8">
+          <a href="/" class="flex items-center shrink-0">
+            <img src="{{ 'logo.png' | asset_url }}" alt="Mijaz Logo" class="h-12 w-auto object-contain" />
+          </a>
+
+          <nav class="hidden lg:flex items-center gap-5">
+            <a href="/" class="text-[11px] font-semibold uppercase tracking-wider text-gray-800 hover:text-[#800000] transition-colors">Home</a>
+            <a href="/collections/all" class="text-[11px] font-semibold uppercase tracking-wider text-gray-800 hover:text-[#800000] transition-colors">Collections</a>
+            <a href="/collections/new-arrivals" class="text-[11px] font-semibold uppercase tracking-wider text-gray-800 hover:text-[#800000] transition-colors">New Arrivals</a>
+            <a href="/pages/combos" class="text-[11px] font-semibold uppercase tracking-wider text-gray-800 hover:text-[#800000] transition-colors">Combos</a>
+            <a href="/pages/gifting" class="text-[11px] font-semibold uppercase tracking-wider text-gray-800 hover:text-[#800000] transition-colors">Gifting</a>
+            <a href="/pages/about" class="text-[11px] font-semibold uppercase tracking-wider text-gray-800 hover:text-[#800000] transition-colors">About</a>
+          </nav>
+        </div>
+
+        <!-- Right Side: Search + Cart Icon -->
+        <div class="flex items-center gap-4">
+          <a href="/account" class="text-[11px] font-semibold text-gray-700 hover:text-[#800000] uppercase tracking-wider">Account</a>
+          <div class="w-px h-4 bg-gray-200"></div>
+          <a href="/cart" class="relative text-gray-700 hover:text-[#800000]">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+            <span class="absolute -top-1.5 -right-1.5 bg-[#800000] text-white text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+              {{ cart.item_count }}
+            </span>
+          </a>
+        </div>
+
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main role="main">
+      {{ content_for_layout }}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-[#111111] text-white pt-16 pb-10 mt-12" style="font-family: 'DM Sans', sans-serif;">
+      <div class="max-w-[1440px] mx-auto px-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+          
+          <!-- Column 1: Brand Info -->
+          <div>
+            <div class="mb-5">
+              <img src="{{ 'logo.png' | asset_url }}" alt="Mijaz Logo" class="h-12 w-auto object-contain" />
+            </div>
+            <p class="text-gray-400 text-xs leading-relaxed mb-6">
+              Artisanal luxury fragrances and oils. Crafted for those who wear their story as a scent.
+            </p>
+          </div>
+
+          <!-- Column 2: Collections Links -->
+          <div>
+            <h4 class="text-[#D4AF37] text-[10px] uppercase tracking-[0.25em] mb-5 font-bold" style="font-family: 'Cinzel', serif;">Collections</h4>
+            <div class="flex flex-col gap-2.5 text-xs text-gray-400">
+              <a href="/collections/perfumes" class="hover:text-white transition-colors">Perfumes</a>
+              <a href="/collections/perfume-oils" class="hover:text-white transition-colors">Perfume Oils</a>
+            </div>
+          </div>
+
+          <!-- Column 3: Navigation -->
+          <div>
+            <h4 class="text-[#D4AF37] text-[10px] uppercase tracking-[0.25em] mb-5 font-bold" style="font-family: 'Cinzel', serif;">More</h4>
+            <div class="flex flex-col gap-2.5 text-xs text-gray-400">
+              <a href="/collections/men" class="hover:text-white transition-colors">Men's Picks</a>
+              <a href="/collections/women" class="hover:text-white transition-colors">Women's Picks</a>
+              <a href="/pages/about" class="hover:text-white transition-colors">About Us</a>
+            </div>
+          </div>
+
+          <!-- Column 4: Support -->
+          <div>
+            <h4 class="text-[#D4AF37] text-[10px] uppercase tracking-[0.25em] mb-5 font-bold" style="font-family: 'Cinzel', serif;">Support</h4>
+            <div class="flex flex-col gap-2.5 text-xs text-gray-400">
+              <a href="/pages/faq" class="hover:text-white transition-colors">FAQs</a>
+              <a href="/pages/contact" class="hover:text-white transition-colors">Contact Us</a>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Copyright -->
+        <div class="border-t border-white/5 pt-6 text-center text-gray-500 text-[10px]">
+          © {{ 'now' | date: "%Y" }} Mijaz Luxury Fragrances. All rights reserved.
+        </div>
+      </div>
+    </footer>
+
+    <!-- Load Custom JavaScript Controllers -->
+    {{ 'cart-discount.js' | asset_url | script_tag }}
+    {{ 'cart-note.js' | asset_url | script_tag }}
+  </body>
+</html>

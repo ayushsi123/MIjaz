@@ -1,0 +1,813 @@
+<script type="module" src="https://cdn.shopify.com/storefront/web-components.js"></script>
+
+<!-- Shopify Store Credentials & Market Setup -->
+<shopify-store 
+  store-domain="0i0awx-em.myshopify.com" 
+  public-access-token="186d8896b8a796bb76f33d1e91341670" 
+  country="IN" 
+  language="en"
+></shopify-store>
+
+<!-- Main Header & Brand Bar -->
+<header class="mj-header">
+  <div class="mj-header-container">
+    <a href="#" class="mj-brand" id="mj-brand-link">MIJAZ LUXURY</a>
+    <nav class="mj-nav">
+      <a href="#collection" class="mj-nav-link">Scents</a>
+      <a href="#about" class="mj-nav-link">Our Story</a>
+    </nav>
+    <button class="mj-cart-toggle" id="mj-open-cart-btn" onclick="document.getElementById('mj-main-cart').showModal();">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <path d="M16 10a4 4 0 0 1-8 0"></path>
+      </svg>
+      <span>Bag</span>
+    </button>
+  </div>
+</header>
+
+<!-- Hero / Brand Narrative -->
+<section class="mj-hero">
+  <div class="mj-hero-overlay"></div>
+  <div class="mj-hero-content">
+    <p class="mj-hero-subtitle">ARTISANAL EXTRAITS DE PARFUM</p>
+    <h1 class="mj-hero-title">Wear Your Story</h1>
+    <p class="mj-hero-desc">Rich botanical elixirs and concentrated perfume oils hand-blended for exceptional complexity and everlasting sillage.</p>
+    <a href="#collection" class="mj-hero-btn" id="mj-hero-cta-btn">Discover the Library</a>
+  </div>
+</section>
+
+<!-- Collection Grid Section -->
+<section class="mj-collection-section" id="collection">
+  <div class="mj-section-header">
+    <span class="mj-section-tag">THE LIBRARY</span>
+    <h2 class="mj-section-title">Bestselling Fragrances</h2>
+    <p class="mj-section-desc">Explore our signature extraits and intense perfume oils. Click any fragrance to customize size and packaging.</p>
+  </div>
+
+  <!-- Dynamic Product Grid via Shopify Storefront Web Components -->
+  <shopify-list-context type="product" query="products" first="12">
+    <template>
+      <div class="mj-product-card">
+        <div class="mj-product-media-wrapper">
+          <shopify-media 
+            query="product.selectedOrFirstAvailableVariant.image" 
+            width="320" 
+            height="400"
+            layout="constrained"
+          ></shopify-media>
+          <div class="mj-product-badge">Best Seller</div>
+        </div>
+        <div class="mj-product-info">
+          <h3 class="mj-product-title">
+            <shopify-data query="product.title"></shopify-data>
+          </h3>
+          <div class="mj-product-price">
+            <shopify-money query="product.selectedOrFirstAvailableVariant.price" format="money_with_currency"></shopify-money>
+          </div>
+          <button 
+            class="mj-product-btn" 
+            id="mj-view-btn-{{product.handle}}"
+            onclick="document.getElementById('mj-product-modal').showModal(); document.getElementById('mj-product-modal-context').update(event);"
+          >
+            Select Options
+          </button>
+        </div>
+      </div>
+    </template>
+    
+    <!-- Fallback Warning Display in case no products are published in Shopify Sales Channel -->
+    <div shopify-loading-placeholder class="mj-loading-container">
+      <div class="mj-loader"></div>
+      <p class="mj-loading-text">Retrieving live luxury collection...</p>
+    </div>
+  </shopify-list-context>
+</section>
+
+<!-- Interactive Product Detail Modal Dialog -->
+<dialog id="mj-product-modal" class="mj-product-modal">
+  <shopify-context id="mj-product-modal-context" type="product" wait-for-update>
+    <template>
+      <div class="mj-modal-container">
+        <!-- Close trigger -->
+        <button class="mj-modal-close" id="mj-close-modal-btn" onclick="document.getElementById('mj-product-modal').close();">
+          &#10005;
+        </button>
+
+        <div class="mj-modal-layout">
+          <!-- Product image -->
+          <div class="mj-modal-media">
+            <shopify-media 
+              query="product.selectedOrFirstAvailableVariant.image" 
+              width="480" 
+              height="600"
+              layout="constrained"
+            ></shopify-media>
+          </div>
+
+          <!-- Product meta & settings -->
+          <div class="mj-modal-details">
+            <div class="mj-modal-header">
+              <span class="mj-modal-vendor">
+                <shopify-data query="product.vendor"></shopify-data>
+              </span>
+              <h2 class="mj-modal-title">
+                <shopify-data query="product.title"></shopify-data>
+              </h2>
+              <div class="mj-modal-price">
+                <shopify-money query="product.selectedOrFirstAvailableVariant.price" format="money_with_currency"></shopify-money>
+              </div>
+            </div>
+
+            <!-- Variant options picker -->
+            <div class="mj-modal-options">
+              <shopify-variant-selector></shopify-variant-selector>
+            </div>
+
+            <!-- Description -->
+            <div class="mj-modal-desc">
+              <shopify-data query="product.descriptionHtml"></shopify-data>
+            </div>
+
+            <!-- Checkout triggers -->
+            <div class="mj-modal-actions">
+              <button 
+                class="mj-btn-primary" 
+                id="mj-add-to-cart-btn"
+                onclick="document.getElementById('mj-main-cart').addLine(event).showModal();"
+                shopify-attr--disabled="!product.selectedOrFirstAvailableVariant.availableForSale"
+              >
+                Add to Bag
+              </button>
+              <button 
+                class="mj-btn-secondary" 
+                id="mj-buy-now-btn"
+                onclick="document.querySelector('shopify-store').buyNow(event);"
+                shopify-attr--disabled="!product.selectedOrFirstAvailableVariant.availableForSale"
+              >
+                Buy Instantly
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+  </shopify-context>
+</dialog>
+
+<!-- Main Shopify Shopping Cart Drawer -->
+<shopify-cart id="mj-main-cart">
+  <div slot="empty" class="mj-empty-cart">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#800000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <path d="M16 10a4 4 0 0 1-8 0"></path>
+    </svg>
+    <p>Your library is currently empty.</p>
+  </div>
+  <div slot="checkout-button">Proceed to Checkout</div>
+</shopify-cart>
+
+<!-- Our Story Section -->
+<section class="mj-about-section" id="about">
+  <div class="mj-about-layout">
+    <div class="mj-about-content">
+      <span class="mj-section-tag">OUR MISSION</span>
+      <h2 class="mj-about-title">The Art of Pure Sillage</h2>
+      <p class="mj-about-desc">At Mijaz Luxury, we believe fragrances are not merely accessories, but invisible storytellers. Every bottle is carefully conceptualized, aged, and bottled by hand in micro-batches to guarantee unmatched complexity and longevity.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="mj-footer">
+  <p>&copy; 2026 MIJAZ LUXURY. All rights reserved.</p>
+</footer>
+
+<!-- Luxury Design System Styles -->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+  :root {
+    --color-burgundy: #800000;
+    --color-gold: #D4AF37;
+    --color-gold-hover: #C5A028;
+    --color-white: #FFFFFF;
+    --color-bg: #FAF8F4;
+    --color-card-bg: #FFFFFF;
+    --color-text-main: #1A1A1A;
+    --color-text-muted: #555555;
+    --color-border: #E8E5DF;
+    
+    --font-serif: 'Cinzel', serif;
+    --font-sans: 'Inter', sans-serif;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text-main);
+    font-family: var(--font-sans);
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* Header navigation styling */
+  .mj-header {
+    background-color: var(--color-bg);
+    border-bottom: 1px solid var(--color-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 1.25rem 2rem;
+  }
+
+  .mj-header-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .mj-brand {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: var(--color-burgundy);
+    text-decoration: none;
+    letter-spacing: 0.15em;
+  }
+
+  .mj-nav {
+    display: flex;
+    gap: 2.5rem;
+  }
+
+  .mj-nav-link {
+    color: var(--color-text-main);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: color 0.2s ease;
+  }
+
+  .mj-nav-link:hover {
+    color: var(--color-gold);
+  }
+
+  .mj-cart-toggle {
+    background: transparent;
+    border: none;
+    color: var(--color-text-main);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0.5rem 1rem;
+    transition: color 0.2s ease;
+  }
+
+  .mj-cart-toggle:hover {
+    color: var(--color-burgundy);
+  }
+
+  /* Hero Section */
+  .mj-hero {
+    position: relative;
+    height: 75vh;
+    min-height: 500px;
+    background-color: #0F0E0C;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--color-white);
+    padding: 2rem;
+  }
+
+  .mj-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, rgba(128,0,0,0.15) 0%, rgba(0,0,0,0.85) 100%);
+    z-index: 1;
+  }
+
+  .mj-hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 750px;
+  }
+
+  .mj-hero-subtitle {
+    font-size: 0.75rem;
+    letter-spacing: 0.35em;
+    color: var(--color-gold);
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+
+  .mj-hero-title {
+    font-family: var(--font-serif);
+    font-size: 3.5rem;
+    font-weight: 400;
+    margin: 0 0 1.5rem;
+    letter-spacing: 0.05em;
+  }
+
+  .mj-hero-desc {
+    font-size: 1.125rem;
+    font-weight: 300;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 2.5rem;
+    line-height: 1.7;
+  }
+
+  .mj-hero-btn {
+    display: inline-block;
+    background-color: var(--color-gold);
+    color: var(--color-text-main);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.875rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 1rem 2.5rem;
+    border-radius: 4px;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .mj-hero-btn:hover {
+    background-color: var(--color-gold-hover);
+    transform: translateY(-2px);
+  }
+
+  /* Collection section */
+  .mj-collection-section {
+    max-width: 1200px;
+    margin: 6rem auto;
+    padding: 0 2rem;
+  }
+
+  .mj-section-header {
+    text-align: center;
+    margin-bottom: 4rem;
+  }
+
+  .mj-section-tag {
+    font-size: 0.75rem;
+    letter-spacing: 0.25em;
+    color: var(--color-gold);
+    font-weight: 700;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  .mj-section-title {
+    font-family: var(--font-serif);
+    font-size: 2.5rem;
+    font-weight: 400;
+    margin: 0 0 1rem;
+    color: var(--color-burgundy);
+  }
+
+  .mj-section-desc {
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* Grid layout container */
+  shopify-list-context {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2.5rem;
+  }
+
+  .mj-product-card {
+    background-color: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .mj-product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+  }
+
+  .mj-product-media-wrapper {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4/5;
+    background-color: #FAF8F4;
+    overflow: hidden;
+  }
+
+  .mj-product-media-wrapper shopify-media {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .mj-product-media-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .mj-product-card:hover img {
+    transform: scale(1.04);
+  }
+
+  .mj-product-badge {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    background-color: var(--color-burgundy);
+    color: var(--color-white);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.35rem 0.8rem;
+    border-radius: 4px;
+    z-index: 2;
+  }
+
+  .mj-product-info {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+
+  .mj-product-title {
+    font-family: var(--font-serif);
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem;
+    color: var(--color-text-main);
+  }
+
+  .mj-product-price {
+    font-weight: 500;
+    font-size: 1rem;
+    color: var(--color-burgundy);
+    margin-bottom: 1.25rem;
+  }
+
+  .mj-product-btn {
+    background-color: transparent;
+    border: 1px solid var(--color-text-main);
+    color: var(--color-text-main);
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.8rem;
+    width: 100%;
+    cursor: pointer;
+    border-radius: 4px;
+    margin-top: auto;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .mj-product-btn:hover {
+    background-color: var(--color-text-main);
+    color: var(--color-white);
+  }
+
+  /* Loading State */
+  .mj-loading-container {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mj-loader {
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--color-border);
+    border-top: 2px solid var(--color-burgundy);
+    border-radius: 50%;
+    animation: mj-spin 1s linear infinite;
+    margin-bottom: 1.5rem;
+  }
+
+  @keyframes mj-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .mj-loading-text {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* Modal Details Layout */
+  .mj-product-modal {
+    padding: 0;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.2);
+    max-width: 900px;
+    width: 90%;
+    background-color: var(--color-card-bg);
+  }
+
+  .mj-product-modal::backdrop {
+    background-color: rgba(15, 14, 12, 0.8);
+    backdrop-filter: blur(4px);
+  }
+
+  .mj-modal-container {
+    position: relative;
+    padding: 3rem;
+  }
+
+  .mj-modal-close {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+
+  .mj-modal-close:hover {
+    color: var(--color-burgundy);
+  }
+
+  .mj-modal-layout {
+    display: flex;
+    gap: 3rem;
+  }
+
+  .mj-modal-media {
+    width: 45%;
+    aspect-ratio: 4/5;
+    background-color: #FAF8F4;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .mj-modal-media shopify-media {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .mj-modal-details {
+    width: 55%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mj-modal-vendor {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--color-gold);
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  .mj-modal-title {
+    font-family: var(--font-serif);
+    font-size: 2.25rem;
+    font-weight: 400;
+    margin: 0 0 1rem;
+    color: var(--color-text-main);
+  }
+
+  .mj-modal-price {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-burgundy);
+    margin-bottom: 2rem;
+  }
+
+  .mj-modal-desc {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin-bottom: 2.5rem;
+    line-height: 1.6;
+  }
+
+  .mj-modal-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: auto;
+  }
+
+  .mj-btn-primary {
+    flex: 1;
+    background-color: var(--color-burgundy);
+    color: var(--color-white);
+    border: none;
+    padding: 1.1rem;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 0.8125rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: opacity 0.2s ease;
+  }
+
+  .mj-btn-primary:hover {
+    opacity: 0.9;
+  }
+
+  .mj-btn-secondary {
+    flex: 1;
+    background-color: var(--color-white);
+    color: var(--color-burgundy);
+    border: 1px solid var(--color-burgundy);
+    padding: 1.1rem;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 0.8125rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .mj-btn-secondary:hover {
+    background-color: var(--color-burgundy);
+    color: var(--color-white);
+  }
+
+  /* Gifting / About Section styling */
+  .mj-about-section {
+    background-color: var(--color-card-bg);
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    padding: 6rem 2rem;
+  }
+
+  .mj-about-layout {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .mj-about-title {
+    font-family: var(--font-serif);
+    font-size: 2.25rem;
+    font-weight: 400;
+    margin: 1rem 0;
+  }
+
+  .mj-about-desc {
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    line-height: 1.8;
+  }
+
+  .mj-footer {
+    text-align: center;
+    padding: 3rem;
+    background-color: #0F0E0C;
+    color: rgba(255,255,255,0.4);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+  }
+
+  /* Responsive breakpoints */
+  @media (max-width: 768px) {
+    .mj-nav {
+      display: none;
+    }
+    .mj-hero-title {
+      font-size: 2.5rem;
+    }
+    .mj-modal-layout {
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .mj-modal-media, .mj-modal-details {
+      width: 100%;
+    }
+    .mj-modal-container {
+      padding: 2rem 1.5rem;
+    }
+  }
+
+  /* Custom Cart overrides via Shopify parts */
+  shopify-cart::part(dialog) {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.25);
+    background-color: var(--color-card-bg);
+    padding: 2rem;
+    max-width: 480px;
+    width: 90%;
+  }
+
+  shopify-cart::part(primary-button) {
+    background-color: var(--color-burgundy);
+    color: var(--color-white);
+    border: none;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 0.8125rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    border-radius: 4px;
+    padding: 1.1rem;
+    transition: opacity 0.2s ease;
+  }
+
+  shopify-cart::part(primary-button):hover {
+    opacity: 0.9;
+  }
+
+  shopify-cart::part(secondary-button) {
+    background-color: var(--color-white);
+    color: var(--color-text-main);
+    fill: var(--color-text-main);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    transition: border-color 0.2s ease;
+  }
+
+  shopify-cart::part(secondary-button):hover {
+    border-color: var(--color-text-main);
+  }
+
+  shopify-cart::part(line-heading) {
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    color: var(--color-text-main);
+  }
+
+  .mj-empty-cart {
+    text-align: center;
+    padding: 3rem 1rem;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+  }
+
+  .mj-empty-cart svg {
+    margin-bottom: 1rem;
+  }
+
+  /* Custom Variant Selector styling override */
+  shopify-variant-selector::part(form) {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  shopify-variant-selector::part(label) {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-text-muted);
+  }
+
+  shopify-variant-selector::part(select) {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-bg);
+    border-radius: 4px;
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    color: var(--color-text-main);
+    cursor: pointer;
+  }
+</style>

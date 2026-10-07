@@ -1,0 +1,99 @@
+{% comment %}
+  Mijaz Specials / Recommended Slider Section.
+  Save in sections/specials-recommended.liquid
+{% endcomment %}
+
+<section class="py-20 px-6 max-w-[1440px] mx-auto" data-section-id="{{ section.id }}">
+  <div class="text-center mb-12">
+    <p class="text-[#D4AF37] text-[10px] tracking-[0.35em] uppercase mb-3">{{ section.settings.sub_title }}</p>
+    <h2 class="text-3xl text-black mb-4 font-normal" style="font-family: 'Cinzel', serif;">{{ section.settings.title }}</h2>
+    <p class="text-gray-500 text-sm max-w-xl mx-auto leading-relaxed">{{ section.settings.text }}</p>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-[1100px] mx-auto">
+    {%- assign featured_collection = collections[section.settings.collection] -%}
+    {%- for product in featured_collection.products limit: 3 -%}
+      <div class="group flex flex-col bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow duration-300">
+        <a href="{{ product.url }}" class="relative overflow-hidden bg-[#f5f3f0]" style="aspect-ratio: 3/4;">
+          <img
+            src="{{ product.featured_image | image_url: width: 600 }}"
+            alt="{{ product.title }}"
+            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+          />
+          {%- if product.compare_at_price > product.price -%}
+            <span class="absolute top-3 left-3 bg-[#800000] text-white text-[8px] font-bold px-2 py-0.5 uppercase tracking-widest rounded-md">Sale</span>
+          {%- endif -%}
+        </a>
+        <div class="p-5 flex-grow flex flex-col justify-between">
+          <div class="mb-4">
+            <h3 class="font-normal text-sm text-gray-900 tracking-wide mb-1" style="font-family: 'Cinzel', serif;">
+              <a href="{{ product.url }}" class="hover:text-[#800000] transition-colors">{{ product.title }}</a>
+            </h3>
+            <p class="text-[9px] text-gray-400 italic line-clamp-1 mb-2">
+              {{ product.description | strip_html | truncatewords: 8 }}
+            </p>
+          </div>
+          <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+            <div>
+              {%- if product.price_varies -%}
+                <span class="text-[10px] text-gray-400">From</span>
+                <span class="text-xs font-bold text-gray-900">{{ product.price_min | money }}</span>
+              {%- else -%}
+                <span class="text-xs font-bold text-gray-900">{{ product.price | money }}</span>
+              {%- endif -%}
+            </div>
+            <a href="{{ product.url }}" class="text-[9px] font-bold text-[#800000] hover:text-[#D4AF37] uppercase tracking-wider transition-colors">
+              View Scent
+            </a>
+          </div>
+        </div>
+      </div>
+    {%- else -%}
+      {%- for i in (1..3) -%}
+        <div class="group flex flex-col bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow duration-300">
+          <div class="relative bg-neutral-100" style="aspect-ratio: 3/4;"></div>
+          <div class="p-5">
+            <h3 class="font-normal text-sm text-gray-900 mb-1" style="font-family: 'Cinzel', serif;">Example Scent #{{ i }}</h3>
+            <p class="text-[9px] text-gray-400 italic line-clamp-1">Rich woody layers with amber notes.</p>
+          </div>
+        </div>
+      {%- endfor -%}
+    {%- endfor -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Specials Slider",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title",
+      "default": "Specials / Recommended"
+    },
+    {
+      "type": "text",
+      "id": "sub_title",
+      "label": "Sub-title",
+      "default": "Handpicked Selections"
+    },
+    {
+      "type": "textarea",
+      "id": "text",
+      "label": "Description text",
+      "default": "Indulge in our collection of extraits de parfum, hand-selected for exceptional longevity and character."
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Collection"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Specials Slider"
+    }
+  ]
+}
+{% endschema %}

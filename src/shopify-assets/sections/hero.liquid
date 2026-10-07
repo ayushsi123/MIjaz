@@ -1,0 +1,72 @@
+{% comment %}
+  Mijaz Luxury Hero Banner Section.
+  Save in sections/hero.liquid
+{% endcomment %}
+
+<section class="relative w-full overflow-hidden bg-black" style="height: {{ section.settings.hero_height }}px; min-height: 520px;" data-section-id="{{ section.id }}" data-section-type="hero">
+  {%- if section.settings.image != blank -%}
+    <img
+      src="{{ section.settings.image | image_url: width: 2000 }}"
+      alt="Mijaz Hero Banner"
+      class="absolute inset-0 w-full h-full object-cover opacity-60"
+    />
+  {%- else -%}
+    <div class="absolute inset-0 bg-neutral-900 opacity-60"></div>
+  {%- endif -%}
+  <div class="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
+  
+  <!-- Hero Content -->
+  <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-6 z-10">
+    <p class="text-[#D4AF37] text-xs tracking-[0.4em] uppercase mb-4">{{ section.settings.sub_heading }}</p>
+    <h1 class="text-white text-6xl md:text-[88px] leading-none mb-4 tracking-wide" style="font-family: 'Cinzel', serif;">{{ section.settings.heading }}</h1>
+    <p class="text-white/70 text-sm md:text-base mb-10 max-w-lg tracking-wide leading-relaxed">
+      {{ section.settings.text }}
+    </p>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Hero Banner",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Hero background image"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading text",
+      "default": "MIJAZ"
+    },
+    {
+      "type": "text",
+      "id": "sub_heading",
+      "label": "Sub-heading text",
+      "default": "Exclusively Crafted · Est. 2018"
+    },
+    {
+      "type": "textarea",
+      "id": "text",
+      "label": "Body description text",
+      "default": "Wear your story as a scent. Artisanal perfumes and oils crafted from the world's most precious botanical ingredients."
+    },
+    {
+      "type": "range",
+      "id": "hero_height",
+      "min": 400,
+      "max": 800,
+      "step": 50,
+      "unit": "px",
+      "label": "Banner Height",
+      "default": 650
+    }
+  ],
+  "presets": [
+    {
+      "name": "Hero Banner"
+    }
+  ]
+}
+{% endschema %}

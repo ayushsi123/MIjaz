@@ -1,0 +1,102 @@
+{% comment %}
+  Mijaz Product Ranges Grid Section.
+  Save in sections/featured-collections.liquid
+{% endcomment %}
+
+<section class="grid grid-cols-1 md:grid-cols-2 gap-6 px-6 max-w-[1440px] mx-auto mb-16" data-section-id="{{ section.id }}">
+  
+  <!-- Perfumes Block -->
+  <a href="{{ section.settings.link_perfumes | default: '#' }}" class="relative h-[240px] overflow-hidden group block rounded-2xl shadow-xs hover:shadow-md transition-all">
+    {%- if section.settings.img_perfumes != blank -%}
+      <img src="{{ section.settings.img_perfumes | image_url: width: 850 }}" alt="Shop Perfumes" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 rounded-2xl" />
+    {%- else -%}
+      <div class="absolute inset-0 bg-neutral-800 rounded-2xl"></div>
+    {%- endif -%}
+    <div class="absolute inset-0 bg-black/15 group-hover:bg-black/5 transition-colors duration-300 rounded-2xl" />
+    <div class="absolute inset-0 flex flex-col items-center justify-center">
+      <h3 class="text-white text-xl tracking-[0.2em] uppercase mb-1 drop-shadow-md font-semibold" style="font-family: 'Cinzel', serif;">{{ section.settings.title_perfumes }}</h3>
+      <p class="text-white/90 text-[10px] tracking-widest uppercase drop-shadow-xs font-bold">{{ section.settings.subtitle_perfumes }}</p>
+      <div class="mt-3 w-8 h-px bg-[#D4AF37] group-hover:w-16 transition-all duration-300" />
+    </div>
+  </a>
+
+  <!-- Perfume Oils Block -->
+  <a href="{{ section.settings.link_oils | default: '#' }}" class="relative h-[240px] overflow-hidden group block rounded-2xl shadow-xs hover:shadow-md transition-all">
+    {%- if section.settings.img_oils != blank -%}
+      <img src="{{ section.settings.img_oils | image_url: width: 850 }}" alt="Shop Perfume Oils" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 rounded-2xl" />
+    {%- else -%}
+      <div class="absolute inset-0 bg-neutral-800 rounded-2xl"></div>
+    {%- endif -%}
+    <div class="absolute inset-0 bg-black/15 group-hover:bg-black/5 transition-colors duration-300 rounded-2xl" />
+    <div class="absolute inset-0 flex flex-col items-center justify-center">
+      <h3 class="text-white text-xl tracking-[0.2em] uppercase mb-1 drop-shadow-md font-semibold" style="font-family: 'Cinzel', serif;">{{ section.settings.title_oils }}</h3>
+      <p class="text-white/90 text-[10px] tracking-widest uppercase drop-shadow-xs font-bold">{{ section.settings.subtitle_oils }}</p>
+      <div class="mt-3 w-8 h-px bg-[#D4AF37] group-hover:w-16 transition-all duration-300" />
+    </div>
+  </a>
+</section>
+
+{% schema %}
+{
+  "name": "Product Ranges",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Perfumes Range settings"
+    },
+    {
+      "type": "image_picker",
+      "id": "img_perfumes",
+      "label": "Perfumes Cover Image"
+    },
+    {
+      "type": "text",
+      "id": "title_perfumes",
+      "label": "Title",
+      "default": "Shop Perfumes"
+    },
+    {
+      "type": "text",
+      "id": "subtitle_perfumes",
+      "label": "Subtitle",
+      "default": "Extraits De Parfum · Sprays"
+    },
+    {
+      "type": "url",
+      "id": "link_perfumes",
+      "label": "Link Page"
+    },
+    {
+      "type": "header",
+      "content": "Perfume Oils Range settings"
+    },
+    {
+      "type": "image_picker",
+      "id": "img_oils",
+      "label": "Perfume Oils Cover Image"
+    },
+    {
+      "type": "text",
+      "id": "title_oils",
+      "label": "Title",
+      "default": "Shop Perfume Oils"
+    },
+    {
+      "type": "text",
+      "id": "subtitle_oils",
+      "label": "Subtitle",
+      "default": "Concentrated Elixirs · Roll-Ons"
+    },
+    {
+      "type": "url",
+      "id": "link_oils",
+      "label": "Link Page"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product Ranges"
+    }
+  ]
+}
+{% endschema %}

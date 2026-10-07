@@ -1,0 +1,101 @@
+{% comment %}
+  Mijaz Luxury Footer Section.
+  Save in sections/footer.liquid
+{% endcomment %}
+
+<footer class="bg-[#111111] text-white pt-16 pb-10 mt-12" style="font-family: 'DM Sans', sans-serif;" data-section-id="{{ section.id }}" data-section-type="footer">
+  <div class="max-w-[1440px] mx-auto px-6">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+      
+      <!-- Brand Info -->
+      <div>
+        <div class="mb-5">
+          {%- if section.settings.footer_logo != blank -%}
+            <img src="{{ section.settings.footer_logo | image_url: width: 250 }}" alt="Mijaz Logo" class="h-12 w-auto object-contain" />
+          {%- else -%}
+            <span class="text-xl font-bold tracking-wider text-[#D4AF37]" style="font-family: 'Cinzel', serif;">{{ shop.name }}</span>
+          {%- endif -%}
+        </div>
+        <p class="text-gray-400 text-xs leading-relaxed">
+          {{ section.settings.footer_text }}
+        </p>
+      </div>
+
+      <!-- Links Column 1 -->
+      <div>
+        <h4 class="text-[#D4AF37] text-[10px] uppercase tracking-[0.25em] mb-5 font-bold" style="font-family: 'Cinzel', serif;">
+          {{ linklists[section.settings.footer_menu_1].title }}
+        </h4>
+        <div class="flex flex-col gap-2.5 text-xs text-gray-400">
+          {%- for link in linklists[section.settings.footer_menu_1].links -%}
+            <a href="{{ link.url }}" class="hover:text-white transition-colors">{{ link.title }}</a>
+          {%- endfor -%}
+        </div>
+      </div>
+
+      <!-- Links Column 2 -->
+      <div>
+        <h4 class="text-[#D4AF37] text-[10px] uppercase tracking-[0.25em] mb-5 font-bold" style="font-family: 'Cinzel', serif;">
+          {{ linklists[section.settings.footer_menu_2].title }}
+        </h4>
+        <div class="flex flex-col gap-2.5 text-xs text-gray-400">
+          {%- for link in linklists[section.settings.footer_menu_2].links -%}
+            <a href="{{ link.url }}" class="hover:text-white transition-colors">{{ link.title }}</a>
+          {%- endfor -%}
+        </div>
+      </div>
+
+      <!-- Links Column 3 -->
+      <div>
+        <h4 class="text-[#D4AF37] text-[10px] uppercase tracking-[0.25em] mb-5 font-bold" style="font-family: 'Cinzel', serif;">
+          {{ linklists[section.settings.footer_menu_3].title }}
+        </h4>
+        <div class="flex flex-col gap-2.5 text-xs text-gray-400">
+          {%- for link in linklists[section.settings.footer_menu_3].links -%}
+            <a href="{{ link.url }}" class="hover:text-white transition-colors">{{ link.title }}</a>
+          {%- endfor -%}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Copyright -->
+    <div class="border-t border-white/5 pt-6 text-center text-gray-500 text-[10px]">
+      © {{ 'now' | date: "%Y" }} {{ shop.name }} Luxury Fragrances. All rights reserved.
+    </div>
+  </div>
+</footer>
+
+{% schema %}
+{
+  "name": "Footer",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "footer_logo",
+      "label": "Footer logo"
+    },
+    {
+      "type": "text",
+      "id": "footer_text",
+      "label": "Footer description text",
+      "default": "Artisanal luxury fragrances and oils. Crafted for those who wear their story as a scent."
+    },
+    {
+      "type": "link_list",
+      "id": "footer_menu_1",
+      "label": "First Link List"
+    },
+    {
+      "type": "link_list",
+      "id": "footer_menu_2",
+      "label": "Second Link List"
+    },
+    {
+      "type": "link_list",
+      "id": "footer_menu_3",
+      "label": "Third Link List"
+    }
+  ]
+}
+{% endschema %}

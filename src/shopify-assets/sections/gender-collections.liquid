@@ -1,0 +1,143 @@
+{% comment %}
+  Mijaz Gender Grid Section.
+  Save in sections/gender-collections.liquid
+{% endcomment %}
+
+<section class="grid grid-cols-1 md:grid-cols-3 gap-6 px-6 max-w-[1440px] mx-auto mt-12 mb-12" data-section-id="{{ section.id }}">
+  
+  <!-- Men Block -->
+  <a href="{{ section.settings.link_men | default: '#' }}" class="relative h-[320px] overflow-hidden group block rounded-2xl shadow-xs hover:shadow-md transition-all">
+    {%- if section.settings.img_men != blank -%}
+      <img src="{{ section.settings.img_men | image_url: width: 600 }}" alt="Men Collection" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 rounded-2xl" />
+    {%- else -%}
+      <div class="absolute inset-0 bg-neutral-800 rounded-2xl"></div>
+    {%- endif -%}
+    <div class="absolute inset-0 bg-black/10 group-hover:bg-black/5 transition-colors duration-300 rounded-2xl" />
+    <div class="absolute inset-0 flex flex-col items-center justify-center">
+      <h3 class="text-white text-2xl tracking-[0.2em] uppercase mb-1 drop-shadow-md font-semibold" style="font-family: 'Cinzel', serif;">{{ section.settings.title_men }}</h3>
+      <p class="text-white/95 text-[10px] tracking-widest uppercase drop-shadow-xs font-bold">{{ section.settings.subtitle_men }}</p>
+      <div class="mt-4 w-8 h-px bg-[#D4AF37] group-hover:w-16 transition-all duration-300" />
+    </div>
+  </a>
+
+  <!-- Women Block -->
+  <a href="{{ section.settings.link_women | default: '#' }}" class="relative h-[320px] overflow-hidden group block rounded-2xl shadow-xs hover:shadow-md transition-all">
+    {%- if section.settings.img_women != blank -%}
+      <img src="{{ section.settings.img_women | image_url: width: 600 }}" alt="Women Collection" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 rounded-2xl" />
+    {%- else -%}
+      <div class="absolute inset-0 bg-neutral-800 rounded-2xl"></div>
+    {%- endif -%}
+    <div class="absolute inset-0 bg-black/10 group-hover:bg-black/5 transition-colors duration-300 rounded-2xl" />
+    <div class="absolute inset-0 flex flex-col items-center justify-center">
+      <h3 class="text-white text-2xl tracking-[0.2em] uppercase mb-1 drop-shadow-md font-semibold" style="font-family: 'Cinzel', serif;">{{ section.settings.title_women }}</h3>
+      <p class="text-white/95 text-[10px] tracking-widest uppercase drop-shadow-xs font-bold">{{ section.settings.subtitle_women }}</p>
+      <div class="mt-4 w-8 h-px bg-[#D4AF37] group-hover:w-16 transition-all duration-300" />
+    </div>
+  </a>
+
+  <!-- Unisex Block -->
+  <a href="{{ section.settings.link_unisex | default: '#' }}" class="relative h-[320px] overflow-hidden group block rounded-2xl shadow-xs hover:shadow-md transition-all">
+    {%- if section.settings.img_unisex != blank -%}
+      <img src="{{ section.settings.img_unisex | image_url: width: 600 }}" alt="Unisex Collection" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 rounded-2xl" />
+    {%- else -%}
+      <div class="absolute inset-0 bg-neutral-800 rounded-2xl"></div>
+    {%- endif -%}
+    <div class="absolute inset-0 bg-black/10 group-hover:bg-black/5 transition-colors duration-300 rounded-2xl" />
+    <div class="absolute inset-0 flex flex-col items-center justify-center">
+      <h3 class="text-white text-2xl tracking-[0.2em] uppercase mb-1 drop-shadow-md font-semibold" style="font-family: 'Cinzel', serif;">{{ section.settings.title_unisex }}</h3>
+      <p class="text-white/95 text-[10px] tracking-widest uppercase drop-shadow-xs font-bold">{{ section.settings.subtitle_unisex }}</p>
+      <div class="mt-4 w-8 h-px bg-[#D4AF37] group-hover:w-16 transition-all duration-300" />
+    </div>
+  </a>
+</section>
+
+{% schema %}
+{
+  "name": "Gender Grid",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Men's Collection Settings"
+    },
+    {
+      "type": "image_picker",
+      "id": "img_men",
+      "label": "Men's Image"
+    },
+    {
+      "type": "text",
+      "id": "title_men",
+      "label": "Title",
+      "default": "Men"
+    },
+    {
+      "type": "text",
+      "id": "subtitle_men",
+      "label": "Subtitle",
+      "default": "Bold · Woody · Intense"
+    },
+    {
+      "type": "url",
+      "id": "link_men",
+      "label": "Collection Link"
+    },
+    {
+      "type": "header",
+      "content": "Women's Collection Settings"
+    },
+    {
+      "type": "image_picker",
+      "id": "img_women",
+      "label": "Women's Image"
+    },
+    {
+      "type": "text",
+      "id": "title_women",
+      "label": "Title",
+      "default": "Women"
+    },
+    {
+      "type": "text",
+      "id": "subtitle_women",
+      "label": "Subtitle",
+      "default": "Floral · Fresh · Romantic"
+    },
+    {
+      "type": "url",
+      "id": "link_women",
+      "label": "Collection Link"
+    },
+    {
+      "type": "header",
+      "content": "Unisex Collection Settings"
+    },
+    {
+      "type": "image_picker",
+      "id": "img_unisex",
+      "label": "Unisex's Image"
+    },
+    {
+      "type": "text",
+      "id": "title_unisex",
+      "label": "Title",
+      "default": "Unisex"
+    },
+    {
+      "type": "text",
+      "id": "subtitle_unisex",
+      "label": "Subtitle",
+      "default": "Versatile · Sophisticated"
+    },
+    {
+      "type": "url",
+      "id": "link_unisex",
+      "label": "Collection Link"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Gender Grid"
+    }
+  ]
+}
+{% endschema %}

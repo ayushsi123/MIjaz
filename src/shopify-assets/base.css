@@ -1,0 +1,48 @@
+/* Append these rules to the bottom of your Shopify assets/base.css file */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap');
+
+/* Color Variables */
+:root {
+  --color-mijaz-burgundy: #800000;
+  --color-mijaz-gold: #D4AF37;
+  --color-mijaz-cream: #FAF8F4;
+}
+
+/* Typography styles */
+.cinzel-font {
+  font-family: 'Cinzel', serif !important;
+}
+
+.dm-sans-font {
+  font-family: 'DM Sans', sans-serif !important;
+}
+
+/* Custom Gifting & Combo Badges */
+.combo-badge {
+  background-color: var(--color-mijaz-gold);
+  color: #000000;
+  font-size: 8px;
+  font-weight: bold;
+  padding: 2px 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-radius: 4px;
+}
+
+/* Custom interactive selections */
+.btn-mijaz-primary {
+  background-color: var(--color-mijaz-burgundy);
+  color: #ffffff;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-mijaz-primary:hover {
+  background-color: var(--color-mijaz-gold);
+  color: #000000;
+}

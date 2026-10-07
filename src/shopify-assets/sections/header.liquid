@@ -1,0 +1,80 @@
+{% comment %}
+  Mijaz Luxury Header Section.
+  Save in sections/header.liquid
+{% endcomment %}
+
+<header class="border-b border-gray-100 bg-white sticky top-0 z-50 shadow-xs" data-section-id="{{ section.id }}" data-section-type="header">
+  <div class="max-w-[1440px] mx-auto px-6 h-[68px] flex items-center justify-between">
+    
+    <!-- Left Side: Logo + Navigation Links -->
+    <div class="flex items-center gap-8">
+      <a href="{{ routes.root_url }}" class="flex items-center shrink-0">
+        {%- if section.settings.logo != blank -%}
+          <img src="{{ section.settings.logo | image_url: width: 250 }}" alt="{{ shop.name }}" class="h-12 w-auto object-contain" />
+        {%- else -%}
+          <span class="text-xl font-bold tracking-wider" style="font-family: 'Cinzel', serif;">{{ shop.name }}</span>
+        {%- endif -%}
+      </a>
+
+      <nav class="hidden lg:flex items-center gap-5">
+        {%- for link in linklists[section.settings.menu].links -%}
+          <a href="{{ link.url }}" class="text-[11px] font-semibold uppercase tracking-wider text-gray-800 hover:text-[#800000] transition-colors">
+            {{ link.title }}
+          </a>
+        {%- endfor -%}
+      </nav>
+    </div>
+
+    <!-- Right Side: Search + Account + Cart -->
+    <div class="flex items-center gap-4">
+      <form action="{{ routes.search_url }}" method="get" role="search" class="hidden md:flex items-center relative">
+        <input 
+          type="text" 
+          name="q" 
+          placeholder="Search fragrances..." 
+          class="h-9 w-48 pl-3 pr-8 border border-gray-250 rounded-lg text-xs bg-gray-50 focus:bg-white focus:outline-hidden"
+          value="{{ search.terms | escape }}"
+        />
+        <button type="submit" class="absolute right-2.5 text-gray-400 hover:text-gray-600">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </button>
+      </form>
+
+      {%- if shop.customer_accounts_enabled -%}
+        <a href="{%- if customer -%}{{ routes.account_url }}{%- else -%}{{ routes.account_login_url }}{%- endif -%}" class="text-[11px] font-semibold text-gray-700 hover:text-[#800000] uppercase tracking-wider">
+          {%- if customer -%}Account{%- else -%}Login{%- endif -%}
+        </a>
+        <div class="w-px h-4 bg-gray-200"></div>
+      {%- endif -%}
+
+      <a href="{{ routes.cart_url }}" class="relative text-gray-700 hover:text-[#800000]">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+        </svg>
+        <span class="absolute -top-1.5 -right-1.5 bg-[#800000] text-white text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+          {{ cart.item_count }}
+        </span>
+      </a>
+    </div>
+
+  </div>
+</header>
+
+{% schema %}
+{
+  "name": "Header",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo image"
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Menu",
+      "default": "main-menu"
+    }
+  ]
+}
+{% endschema %}

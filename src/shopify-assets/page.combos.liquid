@@ -1,0 +1,179 @@
+{% comment %}
+  Custom Combos Collection Template for Mijaz Luxury.
+  Assign to a page template in your Shopify theme templates folder.
+{% endcomment %}
+
+<div class="mijaz-combos-container py-16 bg-[#FAF8F4]" style="font-family: 'DM Sans', sans-serif;">
+  <div class="max-w-[1200px] mx-auto px-6">
+    
+    <!-- Header -->
+    <div class="text-center mb-12">
+      <p class="text-[#D4AF37] text-[10px] tracking-[0.35em] uppercase mb-2.5 font-bold" style="font-family: 'Cinzel', serif;">Curated Caskets</p>
+      <h1 class="text-4xl font-normal text-gray-900 mb-3 tracking-wide" style="font-family: 'Cinzel', serif;">Luxury Combo Sets</h1>
+      <p class="text-gray-500 text-xs max-w-lg mx-auto">Discover our handpicked collection of fragrance pairings and travel wardrobes, priced strictly as the sum of their individual catalog prices minus a flat Rs. 50 combo discount.</p>
+    </div>
+
+    <!-- Combos Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      
+      <!-- Combo 1: The Royal Dual Combo -->
+      <div class="bg-white border border-gray-150 rounded-2xl overflow-hidden hover:shadow-md transition-all flex flex-col justify-between">
+        <div class="relative aspect-square bg-gray-50 overflow-hidden">
+          <img src="{{ all_products['gulzaar-extrait'].featured_image | img_url: '400x400', crop: 'center' }}" class="w-full h-full object-cover" />
+          <span class="absolute top-3 left-3 bg-[#D4AF37] text-black text-[8px] font-bold px-2 py-0.5 uppercase tracking-widest rounded-md">Combo Set</span>
+        </div>
+        <div class="p-5 flex-1 flex flex-col justify-between">
+          <div>
+            <h3 class="font-semibold text-sm text-gray-900 mb-1" style="font-family: 'Cinzel', serif;">The Royal Dual Combo</h3>
+            <p class="text-[10px] text-gray-400 leading-relaxed mb-4">Our signature blend in spray & oil formats for dual layering. Yields unparalleled 24-hour presence.</p>
+            <div class="space-y-1 mb-6">
+              <p class="text-[9px] font-bold text-[#800000] uppercase tracking-wider mb-1">What's Inside:</p>
+              <div class="flex items-center gap-1.5 text-[9px] text-gray-500">✓ 50ml Gulzaar Spray Perfume</div>
+              <div class="flex items-center gap-1.5 text-[9px] text-gray-500">✓ 8ml Gulzaar Concentrated Perfume Oil</div>
+            </div>
+          </div>
+          <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
+            <div>
+              <p class="text-[9px] text-gray-400 uppercase tracking-wider">Price</p>
+              <p class="text-xs font-bold text-gray-900">Rs. 900</p>
+            </div>
+            <!-- Submit multi-variant to Shopify Cart -->
+            <button 
+              type="button"
+              data-items='[{"id": {{ all_products["gulzaar-extrait"].variants[1].id }}, "quantity": 1}, {"id": {{ all_products["gulzaar-oil"].variants[0].id }}, "quantity": 1}]'
+              class="add-preset-combo bg-[#800000] hover:bg-[#D4AF37] text-white hover:text-black py-2 px-3.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer"
+            >
+              Add to Cart
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Combo 2: Oud Signature Set -->
+      <div class="bg-white border border-gray-150 rounded-2xl overflow-hidden hover:shadow-md transition-all flex flex-col justify-between">
+        <div class="relative aspect-square bg-gray-50 overflow-hidden">
+          <img src="{{ all_products['rooh-extrait'].featured_image | img_url: '400x400', crop: 'center' }}" class="w-full h-full object-cover" />
+          <span class="absolute top-3 left-3 bg-[#D4AF37] text-black text-[8px] font-bold px-2 py-0.5 uppercase tracking-widest rounded-md">Combo Set</span>
+        </div>
+        <div class="p-5 flex-1 flex flex-col justify-between">
+          <div>
+            <h3 class="font-semibold text-sm text-gray-900 mb-1" style="font-family: 'Cinzel', serif;">Oud Signature Set</h3>
+            <p class="text-[10px] text-gray-400 leading-relaxed mb-4">An pairing of our premium woody blends. Perfect for couples or connoisseurs of fine oud.</p>
+            <div class="space-y-1 mb-6">
+              <p class="text-[9px] font-bold text-[#800000] uppercase tracking-wider mb-1">What's Inside:</p>
+              <div class="flex items-center gap-1.5 text-[9px] text-gray-500">✓ 50ml Gulzaar Spray Perfume</div>
+              <div class="flex items-center gap-1.5 text-[9px] text-gray-500">✓ 50ml Rooh Spray Perfume</div>
+            </div>
+          </div>
+          <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
+            <div>
+              <p class="text-[9px] text-gray-400 uppercase tracking-wider">Price</p>
+              <p class="text-xs font-bold text-gray-900">Rs. 1,150</p>
+            </div>
+            <button 
+              type="button"
+              data-items='[{"id": {{ all_products["gulzaar-extrait"].variants[1].id }}, "quantity": 1}, {"id": {{ all_products["rooh-extrait"].variants[1].id }}, "quantity": 1}]'
+              class="add-preset-combo bg-[#800000] hover:bg-[#D4AF37] text-white hover:text-black py-2 px-3.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer"
+            >
+              Add to Cart
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Combo 3: The Discovery Wardrobe -->
+      <div class="bg-white border border-gray-150 rounded-2xl overflow-hidden hover:shadow-md transition-all flex flex-col justify-between">
+        <div class="relative aspect-square bg-gray-50 overflow-hidden">
+          <img src="{{ all_products['amira-oil'].featured_image | img_url: '400x400', crop: 'center' }}" class="w-full h-full object-cover" />
+          <span class="absolute top-3 left-3 bg-[#D4AF37] text-black text-[8px] font-bold px-2 py-0.5 uppercase tracking-widest rounded-md">Combo Set</span>
+        </div>
+        <div class="p-5 flex-1 flex flex-col justify-between">
+          <div>
+            <h3 class="font-semibold text-sm text-gray-900 mb-1" style="font-family: 'Cinzel', serif;">The Discovery Wardrobe</h3>
+            <p class="text-[10px] text-gray-400 leading-relaxed mb-4">An elegant sampler casket containing 5 of our finest scent profiles in travel-ready roll-ons.</p>
+            <div class="space-y-1 mb-6">
+              <p class="text-[9px] font-bold text-[#800000] uppercase tracking-wider mb-1">What's Inside:</p>
+              <div class="flex items-center gap-1.5 text-[9px] text-gray-500">✓ 8ml Gulzaar Scent Oil</div>
+              <div class="flex items-center gap-1.5 text-[9px] text-gray-500">✓ 8ml Rooh Scent Oil</div>
+              <div class="flex items-center gap-1.5 text-[9px] text-gray-500">✓ 8ml Amaya Scent Oil</div>
+            </div>
+          </div>
+          <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
+            <div>
+              <p class="text-[9px] text-gray-400 uppercase tracking-wider">Price</p>
+              <p class="text-xs font-bold text-gray-900">Rs. 1,700</p>
+            </div>
+            <button 
+              type="button"
+              data-items='[{"id": {{ all_products["gulzaar-oil"].variants[0].id }}, "quantity": 1}, {"id": {{ all_products["rooh-oil"].variants[0].id }}, "quantity": 1}, {"id": {{ all_products["amaya-oil"].variants[0].id }}, "quantity": 1}, {"id": {{ all_products["surkhab-oil"].variants[0].id }}, "quantity": 1}, {"id": {{ all_products["siara-oil"].variants[0].id }}, "quantity": 1}]'
+              class="add-preset-combo bg-[#800000] hover:bg-[#D4AF37] text-white hover:text-black py-2 px-3.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer"
+            >
+              Add to Cart
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Combo 4: Floral Trio Collection -->
+      <div class="bg-white border border-gray-150 rounded-2xl overflow-hidden hover:shadow-md transition-all flex flex-col justify-between">
+        <div class="relative aspect-square bg-gray-50 overflow-hidden">
+          <img src="{{ all_products['samirah-extrait'].featured_image | img_url: '400x400', crop: 'center' }}" class="w-full h-full object-cover" />
+          <span class="absolute top-3 left-3 bg-[#D4AF37] text-black text-[8px] font-bold px-2 py-0.5 uppercase tracking-widest rounded-md">Combo Set</span>
+        </div>
+        <div class="p-5 flex-1 flex flex-col justify-between">
+          <div>
+            <h3 class="font-semibold text-sm text-gray-900 mb-1" style="font-family: 'Cinzel', serif;">Floral Trio Collection</h3>
+            <p class="text-[10px] text-gray-400 leading-relaxed mb-4">A bright, romantic garden collection of our feminine floral blends.</p>
+            <div class="space-y-1 mb-6">
+              <p class="text-[9px] font-bold text-[#800000] uppercase tracking-wider mb-1">What's Inside:</p>
+              <div class="flex items-center gap-1.5 text-[9px] text-gray-500">✓ 20ml Gustakhiyan Spray Perfume</div>
+              <div class="flex items-center gap-1.5 text-[9px] text-gray-500">✓ 20ml Samirah Spray Perfume</div>
+            </div>
+          </div>
+          <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
+            <div>
+              <p class="text-[9px] text-gray-400 uppercase tracking-wider">Price</p>
+              <p class="text-xs font-bold text-gray-900">Rs. 1,000</p>
+            </div>
+            <button 
+              type="button"
+              data-items='[{"id": {{ all_products["gustakhiyan-extrait"].variants[0].id }}, "quantity": 1}, {"id": {{ all_products["samirah-extrait"].variants[0].id }}, "quantity": 1}, {"id": {{ all_products["siara-extrait"].variants[0].id }}, "quantity": 1}]'
+              class="add-preset-combo bg-[#800000] hover:bg-[#D4AF37] text-white hover:text-black py-2 px-3.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer"
+            >
+              Add to Cart
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const addComboButtons = document.querySelectorAll('.add-preset-combo');
+    addComboButtons.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const items = JSON.parse(this.dataset.items);
+        
+        fetch('/cart/add.js', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ items: items })
+        })
+        .then(response => response.json())
+        .then(data => {
+          console.log('Combo items added successfully:', data);
+          window.location.href = '/cart';
+        })
+        .catch(err => {
+          console.error('Error adding combo items to cart:', err);
+          alert('Failed to add combo set to cart.');
+        });
+      });
+    });
+  });
+</script>

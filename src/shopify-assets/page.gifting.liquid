@@ -1,0 +1,180 @@
+{% comment %}
+  Custom Gift Box Builder Template for Mijaz Luxury.
+  Assign to a page template in your Shopify theme.
+{% endcomment %}
+
+<div class="mijaz-gifting-container py-16 bg-[#FAF8F4]" style="font-family: 'DM Sans', sans-serif;">
+  <div class="max-w-[1200px] mx-auto px-6">
+    
+    <!-- Header -->
+    <div class="text-center mb-12">
+      <p class="text-[#D4AF37] text-[10px] tracking-[0.35em] uppercase mb-2.5 font-bold" style="font-family: 'Cinzel', serif;">Mijaz Custom Builder</p>
+      <h1 class="text-4xl font-normal text-gray-900 mb-3 tracking-wide" style="font-family: 'Cinzel', serif;">Design Your Gift Box</h1>
+      <p class="text-gray-500 text-xs max-w-lg mx-auto">Create a customized fragrance casket. Select your scents, choose premium packaging, include printed polaroid photos, and add custom wax-sealed letters.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- Left Column: Scent Selector -->
+      <div class="lg:col-span-7 space-y-6">
+        
+        <!-- Step 1: Select Perfumes -->
+        <div class="bg-white border border-gray-150 p-6 rounded-2xl shadow-xs">
+          <span class="bg-[#800000]/10 text-[#800000] text-[9px] font-bold px-2 py-0.5 tracking-wider uppercase rounded-md">Step 1 of 3</span>
+          <h2 class="text-base font-normal text-gray-900 mt-2 mb-1" style="font-family: 'Cinzel', serif;">Select Fragrances for your Box</h2>
+          <p class="text-xs text-gray-400 mb-4">Choose from our premium extraits de parfum (sprays).</p>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {% for product in collections['perfumes'].products %}
+              <div class="border border-gray-100 rounded-xl p-4 flex gap-3.5 bg-gray-50/55">
+                <img src="{{ product.featured_image | img_url: '120x' }}" class="w-12 h-16 object-cover rounded-md bg-[#faf8f4]" />
+                <div class="flex-1 min-w-0">
+                  <h4 class="font-semibold text-xs text-gray-900 truncate">{{ product.title }}</h4>
+                  <p class="text-[9px] text-gray-400 italic truncate mb-2">{{ product.type }}</p>
+                  
+                  <div class="flex gap-1.5">
+                    {% for variant in product.variants %}
+                      <button
+                        type="button"
+                        data-variant-id="{{ variant.id }}"
+                        data-price="{{ variant.price | money_without_currency }}"
+                        data-name="{{ product.title }}"
+                        data-size="{{ variant.title }}"
+                        class="gift-item-toggle flex-1 py-1 rounded border border-gray-200 text-[9px] font-bold bg-white text-gray-600 transition-all hover:border-[#D4AF37] cursor-pointer"
+                      >
+                        {{ variant.title }} (Rs. {{ variant.price | money_without_decimal_currency }})
+                      </button>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Step 2: Select Perfume Oils -->
+        <div class="bg-white border border-gray-150 p-6 rounded-2xl shadow-xs">
+          <h2 class="text-base font-normal text-gray-900 mb-1" style="font-family: 'Cinzel', serif;">Select Perfume Oils (Roll-Ons)</h2>
+          <p class="text-xs text-gray-400 mb-4">Choose from our highly concentrated attar oil elixirs.</p>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {% for product in collections['perfume-oils'].products %}
+              <div class="border border-gray-100 rounded-xl p-4 flex gap-3.5 bg-gray-50/55">
+                <img src="{{ product.featured_image | img_url: '120x' }}" class="w-12 h-16 object-cover rounded-md bg-[#faf8f4]" />
+                <div class="flex-1 min-w-0">
+                  <h4 class="font-semibold text-xs text-gray-900 truncate">{{ product.title }}</h4>
+                  <p class="text-[9px] text-gray-400 italic truncate mb-2">Concentrated oil</p>
+                  
+                  {% for variant in product.variants %}
+                    <button
+                      type="button"
+                      data-variant-id="{{ variant.id }}"
+                      data-price="{{ variant.price | money_without_currency }}"
+                      data-name="{{ product.title }}"
+                      data-size="{{ variant.title }}"
+                      class="gift-item-toggle w-full py-1.5 rounded border border-gray-200 text-[9px] font-bold bg-white text-gray-600 transition-all hover:border-[#D4AF37] cursor-pointer"
+                    >
+                      8ml Oil (Rs. {{ variant.price | money_without_decimal_currency }})
+                    </button>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Personalization -->
+      <div class="lg:col-span-5 bg-white border border-gray-150 p-6 rounded-2xl shadow-xs space-y-6 h-fit">
+        <div>
+          <span class="bg-[#800000]/10 text-[#800000] text-[9px] font-bold px-2 py-0.5 tracking-wider uppercase rounded-md">Step 2 of 3</span>
+          <h2 class="text-base font-normal text-gray-900 mt-2 mb-1" style="font-family: 'Cinzel', serif;">Casket Customization</h2>
+          <p class="text-xs text-gray-400">Personalize wrapping and card letters.</p>
+        </div>
+
+        <!-- Box Wrapping -->
+        <div id="toggle-rigid-box" class="p-3.5 border border-gray-200 rounded-xl flex items-center justify-between cursor-pointer transition-all hover:border-[#800000]">
+          <div>
+            <p class="text-xs font-bold text-gray-800">Rigid Cardboard Gift Box Wrapping</p>
+            <p class="text-[10px] text-gray-400 mt-0.5">Wrapped inside our signature brand casket</p>
+          </div>
+          <span class="text-xs font-bold text-[#800000]">+ Rs. 200</span>
+        </div>
+
+        <!-- Polaroid Option -->
+        <div class="border border-gray-200 rounded-xl p-4 space-y-3">
+          <div class="flex justify-between items-center">
+            <label class="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer select-none">
+              <input type="checkbox" id="include-polaroid" class="w-4 h-4 text-[#800000] border-gray-300 rounded focus:ring-[#800000] cursor-pointer" />
+              Add Printed Polaroid Photo
+            </label>
+            <span class="text-xs font-bold text-[#800000]">+ Rs. 99</span>
+          </div>
+          <input type="text" id="polaroid-caption" placeholder="Enter Polaroid Caption text..." class="hidden w-full h-9 px-3 bg-gray-50 border border-gray-250 rounded-lg text-xs outline-hidden" />
+        </div>
+
+        <!-- Wax Seal Color & Envelope Message -->
+        <div class="border border-gray-200 rounded-xl p-4 space-y-3">
+          <div class="flex justify-between items-center">
+            <label class="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer select-none">
+              <input type="checkbox" id="include-wax-seal" class="w-4 h-4 text-[#800000] border-gray-300 rounded focus:ring-[#800000] cursor-pointer" />
+              Gold-Pressed Wax Seal Letter
+            </label>
+            <span class="text-xs font-bold text-[#800000]">+ Rs. 49</span>
+          </div>
+          <div id="wax-seal-fields" class="hidden space-y-3">
+            <div>
+              <p class="text-[9px] font-bold text-gray-400 uppercase mb-2">Select Wax Color:</p>
+              <select id="wax-seal-color" class="w-full h-9 px-3 border border-gray-250 rounded-lg text-xs bg-gray-50">
+                <option value="Gold">Gold Wax</option>
+                <option value="Burgundy Red">Burgundy Red Wax</option>
+                <option value="Champagne Silver">Champagne Silver Wax</option>
+              </select>
+            </div>
+            <div>
+              <p class="text-[9px] font-bold text-gray-400 uppercase mb-2">Wax-Sealed Letter Message:</p>
+              <textarea id="wax-letter-message" placeholder="Enter custom message to seal inside the envelope..." class="w-full h-16 p-2.5 bg-gray-50 border border-gray-250 rounded-lg text-xs resize-none"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Message Card Envelope Details -->
+        <div class="bg-gray-50/50 p-4 rounded-xl border border-gray-100 space-y-3">
+          <h3 class="text-[10px] font-bold uppercase tracking-wider text-gray-700" style="font-family: 'Cinzel', serif;">Recipient Card Message</h3>
+          <div class="grid grid-cols-2 gap-3">
+            <input type="text" id="gift-to" placeholder="To: Name" class="h-9 px-3 border border-gray-250 rounded-lg text-xs bg-white" />
+            <input type="text" id="gift-from" placeholder="From: Name" class="h-9 px-3 border border-gray-250 rounded-lg text-xs bg-white" />
+          </div>
+          <textarea id="gift-card-text" placeholder="Enter gift message card text (max 200 chars)..." class="w-full h-16 p-2.5 border border-gray-250 rounded-lg text-xs resize-none bg-white"></textarea>
+        </div>
+
+        <!-- Step 3: Special Request Details -->
+        <div class="space-y-2">
+          <span class="bg-[#800000]/10 text-[#800000] text-[9px] font-bold px-2 py-0.5 tracking-wider uppercase rounded-md">Step 3 of 3</span>
+          <h3 class="text-xs font-bold uppercase text-gray-700 mt-2 mb-1" style="font-family: 'Cinzel', serif;">Special Request Details</h3>
+          <textarea id="special-request-text" placeholder="Enter custom request (e.g. customized box sizes, ribbon colors)..." class="w-full h-16 p-2.5 border border-gray-250 rounded-lg text-xs resize-none"></textarea>
+          <p class="text-[9px] text-gray-400">Important Note: Special requests are subject to approval by the Mijaz team during packing.</p>
+        </div>
+
+        <!-- Live Price and Submit -->
+        <div class="pt-4 border-t border-gray-100 space-y-4">
+          <div class="flex justify-between items-baseline">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Box Cost</span>
+            <span class="text-2xl font-bold text-gray-900" id="live-total-cost">Rs. 0</span>
+          </div>
+
+          <button
+            type="button"
+            id="submit-custom-gift"
+            class="w-full h-12 bg-[#800000] hover:bg-[#D4AF37] text-white hover:text-black font-bold uppercase text-xs tracking-widest rounded-xl transition-all cursor-pointer"
+          >
+            Add Custom Box to Cart
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
