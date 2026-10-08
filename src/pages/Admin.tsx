@@ -29,7 +29,11 @@ export function Admin() {
 
   // New Product State
   const [name, setName] = useState("");
-  const [price, setPrice] = useState("");
+  const [sizeOption, setSizeOption] = useState<"30ml" | "50ml" | "Both">("50ml");
+  const [price30ml, setPrice30ml] = useState("");
+  const [price50ml, setPrice50ml] = useState("");
+  const [stock30ml, setStock30ml] = useState("");
+  const [stock50ml, setStock50ml] = useState("");
   const [description, setDescription] = useState("");
   const [narrative, setNarrative] = useState("");
   const [composition, setComposition] = useState("");
@@ -237,6 +241,24 @@ export function Admin() {
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      let finalSizes: string[] = [];
+      let finalPrices: Record<string, number> = {};
+      let finalSalePrices: Record<string, number> = {};
+      let finalStock: Record<string, number> = {};
+
+      if (sizeOption === "30ml" || sizeOption === "Both") {
+        finalSizes.push("30ml");
+        finalPrices["30ml"] = Number(price30ml);
+        finalSalePrices["30ml"] = Number(price30ml);
+        finalStock["30ml"] = Number(stock30ml);
+      }
+      if (sizeOption === "50ml" || sizeOption === "Both") {
+        finalSizes.push("50ml");
+        finalPrices["50ml"] = Number(price50ml);
+        finalSalePrices["50ml"] = Number(price50ml);
+        finalStock["50ml"] = Number(stock50ml);
+      }
+
       const productData = {
         name,
         description,
@@ -247,9 +269,10 @@ export function Admin() {
         category,
         gender,
         occasion,
-        sizes: ["50ml"], 
-        prices: { "50ml": Number(price) }, 
-        salePrices: { "50ml": Number(price) }, 
+        sizes: finalSizes,
+        prices: finalPrices,
+        salePrices: finalSalePrices,
+        stock: finalStock,
         notes: selectedNotes,
         img: imgUrl,
       };
@@ -264,7 +287,11 @@ export function Admin() {
       }
       
       setName("");
-      setPrice("");
+      setPrice30ml("");
+      setPrice50ml("");
+      setStock30ml("");
+      setStock50ml("");
+      setSizeOption("50ml");
       setDescription("");
       setNarrative("");
       setComposition("");
@@ -281,7 +308,25 @@ export function Admin() {
   const handleEditProduct = (p: any) => {
     setEditingProductId(p.id);
     setName(p.name);
-    setPrice(p.prices?.["50ml"] || p.price || "");
+    if (p.sizes?.includes("30ml") && p.sizes?.includes("50ml")) {
+      setSizeOption("Both");
+      setPrice30ml(p.prices?.["30ml"] || p.price || "");
+      setPrice50ml(p.prices?.["50ml"] || p.price || "");
+      setStock30ml(p.stock?.["30ml"] ?? "");
+      setStock50ml(p.stock?.["50ml"] ?? "");
+    } else if (p.sizes?.includes("30ml")) {
+      setSizeOption("30ml");
+      setPrice30ml(p.prices?.["30ml"] || p.price || "");
+      setPrice50ml("");
+      setStock30ml(p.stock?.["30ml"] ?? "");
+      setStock50ml("");
+    } else {
+      setSizeOption("50ml");
+      setPrice30ml("");
+      setPrice50ml(p.prices?.["50ml"] || p.price || "");
+      setStock30ml("");
+      setStock50ml(p.stock?.["50ml"] ?? "");
+    }
     setDescription(p.description);
     setNarrative(p.narrative || "");
     setComposition(p.composition || "");
@@ -395,6 +440,7 @@ export function Admin() {
           onClick={() => setActiveTab('orders')}
           className={`pb-3 px-2 uppercase tracking-widest text-xs font-bold ${activeTab === 'orders' ? 'border-b-2 border-[#800000] text-[#800000]' : 'text-gray-400 hover:text-gray-800'}`}
         >
+          Orders
         </button>
         <button 
           onClick={() => setActiveTab('invoices')}
@@ -545,9 +591,41 @@ export function Admin() {
               <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full border p-2" required />
             </div>
             
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Price ($)</label>
-              <input type="number" value={price} onChange={e => setPrice(e.target.value)} className="w-full border p-2" required />
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Available Sizes</label>
+                <select value={sizeOption} onChange={e => setSizeOption(e.target.value as any)} className="w-full border p-2">
+                  <option value="50ml">50ml Only</option>
+                  <option value="30ml">30ml Only</option>
+                  <option value="Both">Both 30ml & 50ml</option>
+                </select>
+              </div>
+              
+              {(sizeOption === "30ml" || sizeOption === "Both") && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Price for 30ml (Rs)</label>
+                    <input type="number" value={price30ml} onChange={e => setPrice30ml(e.target.value)} className="w-full border p-2" required />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Stock for 30ml</label>
+                    <input type="number" value={stock30ml} onChange={e => setStock30ml(e.target.value)} className="w-full border p-2" required />
+                  </div>
+                </div>
+              )}
+              
+              {(sizeOption === "50ml" || sizeOption === "Both") && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Price for 50ml (Rs)</label>
+                    <input type="number" value={price50ml} onChange={e => setPrice50ml(e.target.value)} className="w-full border p-2" required />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Stock for 50ml</label>
+                    <input type="number" value={stock50ml} onChange={e => setStock50ml(e.target.value)} className="w-full border p-2" required />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -629,7 +707,9 @@ export function Admin() {
                   onClick={() => {
                     setEditingProductId(null);
                     setName("");
-                    setPrice("");
+                    setPrice30ml("");
+                    setPrice50ml("");
+                    setSizeOption("50ml");
                     setDescription("");
                     setNarrative("");
                     setComposition("");

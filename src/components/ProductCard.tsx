@@ -61,6 +61,8 @@ export function ProductCard({ product }: ProductCardProps) {
 
   const displayImage = product.img || perfume50ml;
 
+  const isOutOfStock = product.stock ? product.stock[selectedSize] <= 0 : false;
+
   // Calculate real review stats
   const reviews = product.reviews || [];
   const count = reviews.length;
@@ -153,13 +155,16 @@ export function ProductCard({ product }: ProductCardProps) {
         {/* Add to Cart Trigger */}
         <button
           onClick={handleAddToCart}
+          disabled={isOutOfStock}
           className={`w-full py-2.5 text-[10px] font-bold tracking-[0.15em] uppercase transition-all duration-200 mt-auto rounded-lg ${
-            added
+            isOutOfStock
+              ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+              : added
               ? "bg-green-600 text-white"
               : "bg-[#D4AF37] text-black hover:bg-[#800000] hover:text-white"
           }`}
         >
-          {added ? "✓ Added to Cart" : "Add to Cart"}
+          {isOutOfStock ? "Out of Stock" : added ? "✓ Added to Cart" : "Add to Cart"}
         </button>
       </div>
     </div>

@@ -23,6 +23,7 @@ export interface Product {
   sizes: string[];
   prices: Record<string, number>;
   salePrices: Record<string, number>;
+  stock?: Record<string, number>;
   notes: string[];
   img: string;
   description: string;

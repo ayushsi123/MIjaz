@@ -57,6 +57,8 @@ export function ProductDetail() {
 
   const displayImage = product.img || perfume50ml;
 
+  const isOutOfStock = product.stock ? product.stock[selectedSize] <= 0 : false;
+
   const handleAddToCart = () => {
     addToCart(product, selectedSize);
     setAdded(true);
@@ -177,8 +179,8 @@ export function ProductDetail() {
                     Rs. {product.prices[selectedSize].toLocaleString()}
                   </span>
                 )}
-                <span className="text-xs text-green-600 font-semibold ml-2 bg-green-50 px-2 py-0.5 rounded-md">
-                  In Stock
+                <span className={`text-xs font-semibold ml-2 px-2 py-0.5 rounded-md ${isOutOfStock ? "text-red-600 bg-red-50" : "text-green-600 bg-green-50"}`}>
+                  {isOutOfStock ? "Out of Stock" : "In Stock"}
                 </span>
               </div>
 
@@ -209,14 +211,17 @@ export function ProductDetail() {
               <div className="flex gap-3 mb-10">
                 <button
                   onClick={handleAddToCart}
+                  disabled={isOutOfStock}
                   className={`flex-1 py-4 text-xs font-bold uppercase tracking-widest transition-all rounded-lg flex items-center justify-center gap-2 cursor-pointer shadow-md ${
-                    added
+                    isOutOfStock
+                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      : added
                       ? "bg-green-600 text-white hover:bg-green-700"
                       : "bg-[#800000] text-white hover:bg-[#D4AF37] hover:text-black"
                   }`}
                 >
                   <ShoppingBag size={14} />
-                  {added ? "✓ Added to Cart" : "Add to Cart"}
+                  {isOutOfStock ? "Out of Stock" : added ? "✓ Added to Cart" : "Add to Cart"}
                 </button>
                 <button
                   onClick={() => setWishlisted(!wishlisted)}

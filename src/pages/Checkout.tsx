@@ -4,7 +4,7 @@ import { useCart } from "../hooks/useCart";
 import { CreditCard, ShoppingBag, ShieldCheck, MapPin, Truck, CheckCircle2, QrCode } from "lucide-react";
 
 import { db } from "../lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc, updateDoc, increment } from "firebase/firestore";
 import perfume50ml from "../imports/perfume-50ml.jpg";
 
 const SANS = { fontFamily: "'DM Sans', sans-serif" } as const;
@@ -129,6 +129,21 @@ export function Checkout() {
     try {
       await addDoc(collection(db, "orders"), newOrder);
       addOrder({ id: orderId, ...newOrder });
+      
+      // Deduct stock
+      for (const item of cart) {
+        if (typeof item.productId === 'string') {
+          const productRef = doc(db, "products", item.productId);
+          try {
+            await updateDoc(productRef, {
+              [`stock.${item.size}`]: increment(-item.qty)
+            });
+          } catch (e) {
+            console.error("Failed to deduct stock for", item.name, e);
+          }
+        }
+      }
+
       setPlacedOrderId(orderId);
       setStep('confirmed');
       clearCart();
@@ -491,7 +506,7 @@ export function Checkout() {
                   disabled={isSubmitting}
                   className="bg-[#800000] text-white px-8 py-3.5 rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-[#D4AF37] hover:text-black transition-all shadow-md cursor-pointer disabled:opacity-50"
                 >
-                  {isSubmitting ? "Connecting to Shopify..." : `Place Order (Rs. ${cartTotal.toLocaleString()})`}
+                  {isSubmitting ? "Processing Order..." : `Place Order (Rs. ${cartTotal.toLocaleString()})`}
                 </button>
               </div>
             </div>
