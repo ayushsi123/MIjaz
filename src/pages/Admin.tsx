@@ -967,11 +967,11 @@ export function Admin() {
       ) : activeTab === 'orders' ? (
         <div>
           <h2 className="text-xl font-semibold mb-6">Recent Orders</h2>
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+          <div className="bg-white border border-gray-200 rounded-xl overflow-x-auto shadow-sm">
             {orders.length === 0 ? (
               <p className="p-6 text-gray-500 text-center">No orders yet.</p>
             ) : (
-              <table className="w-full text-left">
+              <table className="w-full text-left min-w-[800px]">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="p-4 text-xs uppercase tracking-wider text-gray-500">Order ID</th>
