@@ -429,7 +429,7 @@ export function Admin() {
         <button onClick={handleLogout} className="text-gray-500 hover:text-black uppercase tracking-widest text-xs font-bold">Logout</button>
       </div>
 
-      <div className="flex gap-4 border-b border-gray-200 mb-8">
+      <div className="flex gap-4 border-b border-gray-200 mb-8 overflow-x-auto whitespace-nowrap">
         <button 
           onClick={() => setActiveTab('products')}
           className={`pb-3 px-2 uppercase tracking-widest text-xs font-bold ${activeTab === 'products' ? 'border-b-2 border-[#800000] text-[#800000]' : 'text-gray-400 hover:text-gray-800'}`}
