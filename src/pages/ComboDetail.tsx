@@ -82,7 +82,8 @@ export function ComboDetail() {
     const price = prod.salePrices?.[item.size] ?? prod.prices?.[item.size] ?? prod.price ?? 0;
     return sum + Number(price);
   }, 0);
-  const comboPrice = base === 0 ? 0 : Math.max(0, base - 50);
+  const discount = combo.discountPercentage ?? 0;
+  const comboPrice = base === 0 ? 0 : Math.max(0, Math.floor(base * (1 - discount / 100)));
 
   const getComboItemLabels = () => {
     return (combo.items || []).map((item) => {
@@ -177,12 +178,16 @@ export function ComboDetail() {
               <span className="text-3xl font-bold text-[#800000]">
                 Rs. {comboPrice.toLocaleString()}
               </span>
-              <span className="text-lg text-gray-400 line-through">
-                Rs. {((base || 0)).toLocaleString()}
-              </span>
-              <span className="text-xs text-green-600 font-semibold ml-2 bg-green-50 px-2 py-0.5 rounded-md">
-                Bundle Discount Applied
-              </span>
+              {base > comboPrice && (
+                <span className="text-lg text-gray-400 line-through">
+                  Rs. {((base || 0)).toLocaleString()}
+                </span>
+              )}
+              {combo.discountPercentage && combo.discountPercentage > 0 ? (
+                <span className="text-xs text-green-600 font-semibold ml-2 bg-green-50 px-2 py-0.5 rounded-md">
+                  {combo.discountPercentage}% OFF
+                </span>
+              ) : null}
             </div>
 
             {/* Call to Action */}

@@ -61,7 +61,8 @@ export function Combos() {
       return sum + Number(price);
     }, 0);
     if (base === 0) return 0;
-    return Math.max(0, base - 50); // Flat Rs. 50 discount
+    const discount = combo.discountPercentage ?? 0;
+    return Math.max(0, Math.floor(base * (1 - discount / 100)));
   };
 
   const getComboItemLabels = (combo: GiftCombo) => {
@@ -142,6 +143,12 @@ export function Combos() {
               const isSelected = selectedCombo?.id === combo.id;
               const isAdding = addedComboId === combo.id;
               const comboPrice = getComboPrice(combo);
+              const basePrice = (combo.items || []).reduce((sum, item) => {
+                const prod = products.find((p) => String(p.id) === String(item.productId));
+                if (!prod) return sum;
+                const price = prod.salePrices?.[item.size] ?? prod.prices?.[item.size] ?? prod.price ?? 0;
+                return sum + Number(price);
+              }, 0);
               const comboItems = getComboItemLabels(combo);
               
               return (
@@ -188,7 +195,17 @@ export function Combos() {
                     <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
                       <div>
                         <p className="text-[9px] text-gray-400 uppercase tracking-wider">Price</p>
-                        <p className="text-xs font-bold text-gray-900">Rs. {comboPrice.toLocaleString()}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs font-bold text-[#800000]">Rs. {comboPrice.toLocaleString()}</p>
+                          {basePrice > comboPrice && (
+                            <p className="text-[10px] text-gray-400 line-through">Rs. {basePrice.toLocaleString()}</p>
+                          )}
+                          {combo.discountPercentage && combo.discountPercentage > 0 ? (
+                            <span className="text-[9px] text-green-600 font-bold bg-green-50 px-1.5 py-0.5 rounded ml-1">
+                              {combo.discountPercentage}% OFF
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
                       
                       <button

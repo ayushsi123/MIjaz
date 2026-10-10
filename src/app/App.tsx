@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { HashRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
 import { X, Truck } from "lucide-react";
 import { useCart } from "../hooks/useCart";

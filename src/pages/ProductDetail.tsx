@@ -18,7 +18,7 @@ export function ProductDetail() {
   const product = products.find((p) => String(p.id) === String(id));
 
   const [selectedSize, setSelectedSize] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<"narrative" | "notes" | "longevity" | "packaging">("narrative");
+  const [activeTab, setActiveTab] = useState<"narrative" | "longevity" | "packaging">("narrative");
   const [added, setAdded] = useState(false);
   const [wishlisted, setWishlisted] = useState(false);
   const [related, setRelated] = useState<Product[]>([]);
@@ -248,7 +248,6 @@ export function ProductDetail() {
               <div className="flex border-b border-gray-100 bg-gray-50/50">
                 {[
                   { id: "narrative", label: "Narrative" },
-                  { id: "notes", label: "Composition" },
                   { id: "longevity", label: "Wear Guide" },
                   { id: "packaging", label: "Gifting Details" }
                 ].map((t) => (
@@ -268,9 +267,6 @@ export function ProductDetail() {
               <div className="p-6 text-xs text-gray-600 leading-relaxed whitespace-pre-wrap">
                 {activeTab === "narrative" && (
                   <p>{product.narrative || ""}</p>
-                )}
-                {activeTab === "notes" && (
-                  <p>{product.composition || ""}</p>
                 )}
                 {activeTab === "longevity" && (
                   <p>{product.wearGuide || ""}</p>

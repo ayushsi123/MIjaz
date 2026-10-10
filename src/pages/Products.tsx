@@ -1,5 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../lib/firebase";
 import { NOTES } from "../data/products";
 import { useCart } from "../hooks/useCart";
 import { ProductCard } from "../components/ProductCard";
@@ -13,6 +15,22 @@ export function Products() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const products = useCart((state) => state.products);
+  const [availableNotes, setAvailableNotes] = useState(NOTES);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const docRef = doc(db, "settings", "homepage");
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists() && docSnap.data().availableNotes) {
+          setAvailableNotes(docSnap.data().availableNotes);
+        }
+      } catch (error) {
+        console.error("Error fetching homepage settings", error);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   // Active filters from URL query parameters
   const activeCategory = searchParams.get("category") || "";
@@ -115,7 +133,7 @@ export function Products() {
         <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-xs mb-8">
           <p className="text-[10px] text-[#D4AF37] uppercase tracking-[0.25em] font-bold text-center mb-3.5" style={CINZEL}>Shop by Scent Profile</p>
           <div className="flex flex-wrap gap-2 justify-center max-w-4xl mx-auto">
-            {NOTES.map((note) => {
+            {availableNotes.map((note) => {
               const isSelected = activeNote === note;
               return (
                 <button
@@ -299,7 +317,7 @@ export function Products() {
                 >
                   All Notes
                 </button>
-                {NOTES.map((n) => (
+                {availableNotes.map((n) => (
                   <button
                     key={n}
                     onClick={() => handleFilterChange("note", n)}
@@ -423,7 +441,7 @@ export function Products() {
                   >
                     All Notes
                   </button>
-                  {NOTES.map((n) => (
+                  {availableNotes.map((n) => (
                     <button
                       key={n}
                       onClick={() => handleFilterChange("note", n)}

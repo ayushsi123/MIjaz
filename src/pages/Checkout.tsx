@@ -4,7 +4,7 @@ import { useCart } from "../hooks/useCart";
 import { CreditCard, ShoppingBag, ShieldCheck, MapPin, Truck, CheckCircle2, QrCode } from "lucide-react";
 
 import { db } from "../lib/firebase";
-import { collection, addDoc, serverTimestamp, doc, updateDoc, increment } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc, updateDoc, increment, runTransaction, setDoc } from "firebase/firestore";
 import perfume50ml from "../imports/perfume-50ml.jpg";
 
 const SANS = { fontFamily: "'DM Sans', sans-serif" } as const;
@@ -39,6 +39,7 @@ export function Checkout() {
 
   // Generated Order Details
   const [placedOrderId, setPlacedOrderId] = useState("");
+  const [placedOrder, setPlacedOrder] = useState<any>(null);
 
   const validateShippingForm = () => {
     const errors: Record<string, string> = {};
@@ -76,59 +77,83 @@ export function Checkout() {
 
     setIsSubmitting(true);
 
-    const orderId = `MJZ-${Date.now().toString().slice(-6)}-${Math.floor(1000 + Math.random() * 9000)}`;
-    const today = new Date();
-    const deliveryDate = new Date();
-    deliveryDate.setDate(today.getDate() + 4);
-
-    const dateOptions: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" };
-
-    const newOrder = {
-      orderId, // keeping the visual ID
-      date: today.toLocaleDateString("en-IN", dateOptions),
-      estDelivery: deliveryDate.toLocaleDateString("en-IN", dateOptions),
-      items: cart.map(item => {
-        const itemData: any = {
-          productId: item.productId,
-          name: item.name,
-          size: item.size,
-          price: item.price,
-          qty: item.qty
-        };
-        // Only include img if it's defined and a string to avoid Firebase "undefined" error
-        if (typeof item.img === "string") {
-          itemData.img = item.img;
-        }
-        return itemData;
-      }),
-      total: cartTotal,
-      status: "Processing" as const,
-      shippingAddress: {
-        name,
-        email,
-        phone,
-        address: `${address}, ${city}, ${state} - ${pincode}`
-      },
-      paymentMethod,
-      createdAt: serverTimestamp()
-    };
-
-    if (saveAddress) {
-      addAddress({
-        name,
-        street: address,
-        city,
-        state,
-        postalCode: pincode,
-        country: "India",
-        isDefault: savedAddresses.length === 0,
-        label: saveAsLabel
-      });
-    }
-
     try {
-      await addDoc(collection(db, "orders"), newOrder);
-      addOrder({ id: orderId, ...newOrder });
+      // 1. Get the sequential Order ID via Transaction
+      const orderId = await runTransaction(db, async (transaction) => {
+        const settingsRef = doc(db, "settings", "homepage");
+        const sfDoc = await transaction.get(settingsRef);
+        
+        let prefix = "MJZ-2026-27/";
+        let seq = 1;
+
+        if (sfDoc.exists()) {
+          const data = sfDoc.data();
+          if (data.invoicePrefix) prefix = data.invoicePrefix;
+          if (data.nextInvoiceSequence) seq = data.nextInvoiceSequence;
+        }
+
+        const newSeqId = `${prefix}${seq.toString().padStart(3, '0')}`;
+        
+        // Update the sequence
+        transaction.set(settingsRef, { nextInvoiceSequence: seq + 1 }, { merge: true });
+        
+        return newSeqId;
+      });
+
+      const today = new Date();
+      const deliveryDate = new Date();
+      deliveryDate.setDate(today.getDate() + 4);
+
+      const dateOptions: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" };
+
+      const newOrder = {
+        orderId, // keeping the visual ID
+        date: today.toLocaleDateString("en-IN", dateOptions),
+        estDelivery: deliveryDate.toLocaleDateString("en-IN", dateOptions),
+        items: cart.map(item => {
+          const itemData: any = {
+            productId: item.productId,
+            name: item.name,
+            size: item.size,
+            price: item.price,
+            qty: item.qty
+          };
+          // Only include img if it's defined and a string to avoid Firebase "undefined" error
+          if (typeof item.img === "string") {
+            itemData.img = item.img;
+          }
+          return itemData;
+        }),
+        total: cartTotal,
+        status: "Processing" as const,
+        shippingAddress: {
+          name,
+          email,
+          phone,
+          address: `${address}, ${city}, ${state} - ${pincode}`,
+          state,
+          pincode
+        },
+        paymentMethod,
+        createdAt: serverTimestamp()
+      };
+
+      if (saveAddress) {
+        addAddress({
+          name,
+          street: address,
+          city,
+          state,
+          postalCode: pincode,
+          country: "India",
+          isDefault: savedAddresses.length === 0,
+          label: saveAsLabel
+        });
+      }
+
+      const docId = orderId.replace(/\//g, '-');
+      await setDoc(doc(db, "orders", docId), newOrder);
+      addOrder({ id: docId, ...newOrder });
       
       // Deduct stock
       for (const item of cart) {
@@ -145,6 +170,7 @@ export function Checkout() {
       }
 
       setPlacedOrderId(orderId);
+      setPlacedOrder(newOrder);
       setStep('confirmed');
       clearCart();
     } catch (error) {
@@ -552,6 +578,39 @@ export function Checkout() {
             </div>
 
             <div className="space-y-3">
+              <button
+                onClick={() => {
+                  import("../lib/pdfGenerator").then(({ generateInvoicePDF }) => {
+                    generateInvoicePDF({
+                      invoiceNo: placedOrderId,
+                      date: placedOrder?.date || new Date().toLocaleDateString('en-GB'),
+                      dueDate: placedOrder?.date || new Date().toLocaleDateString('en-GB'),
+                      customerName: name,
+                      email: email,
+                      phone: phone,
+                      address: `${address}, ${city}, ${state} - ${pincode}`,
+                      state: state,
+                      pincode: pincode,
+                      items: placedOrder?.items.map((i: any) => ({
+                        name: i.name,
+                        desc: i.size,
+                        qty: i.qty,
+                        price: i.price,
+                        amount: i.price * i.qty
+                      })) || [],
+                      subtotal: placedOrder?.total || cartTotal,
+                      tax: 0,
+                      total: placedOrder?.total || cartTotal,
+                      paymentDetails: paymentMethod === 'COD' ? "Cash on Delivery" : `Paid via ${paymentMethod}`,
+                      message: "Thank you for choosing Mijaz Luxury Perfumery.",
+                      jobDesc: "Online Order"
+                    });
+                  });
+                }}
+                className="w-full bg-[#111] text-white py-3 rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-[#800000] transition-all flex items-center justify-center shadow-sm"
+              >
+                Download Invoice
+              </button>
               <Link
                 to="/profile?tab=orders"
                 className="w-full bg-[#800000] text-white py-3 rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-[#D4AF37] hover:text-black transition-all flex items-center justify-center gap-1.5 shadow-sm"

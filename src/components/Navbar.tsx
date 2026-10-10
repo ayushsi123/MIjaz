@@ -156,11 +156,10 @@ export function Navbar() {
                 </button>
 
                 {collectionsOpen && (
-                  <div
-                    className="absolute top-full left-0 bg-white border border-gray-100 shadow-xl z-50 w-[460px] translate-y-3 rounded-lg overflow-hidden"
-                  >
-                    <div className="p-5">
-                      <p className="text-[10px] text-[#800000] uppercase tracking-[0.25em] font-bold mb-4" style={CINZEL}>Browse Collections</p>
+                  <div className="absolute top-full left-0 z-50 w-[460px] pt-4">
+                    <div className="bg-white border border-gray-100 shadow-xl rounded-lg overflow-hidden">
+                      <div className="p-5">
+                        <p className="text-[10px] text-[#800000] uppercase tracking-[0.25em] font-bold mb-4" style={CINZEL}>Browse Collections</p>
                       <div className="grid grid-cols-2 gap-3 mb-4">
                         {megaCategories.map((cat) => (
                           <Link
@@ -177,17 +176,23 @@ export function Navbar() {
                         ))}
                       </div>
                       <div className="border-t border-gray-100 pt-3 flex gap-5">
-                        {["Men's Picks", "Women's Picks", "New Arrivals", "Best Sellers"].map((l) => (
+                        {[
+                          { label: "Men's Picks", url: "/shop?gender=Men" },
+                          { label: "Women's Picks", url: "/shop?gender=Women" },
+                          { label: "New Arrivals", url: "/shop?sort=rating" },
+                          { label: "Best Sellers", url: "/shop?sort=popular" }
+                        ].map((link) => (
                           <Link
-                            key={l}
-                            to={`/shop?filter=${encodeURIComponent(l)}`}
+                            key={link.label}
+                            to={link.url}
                             onClick={() => setCollectionsOpen(false)}
                             className="text-[11px] text-gray-500 hover:text-[#800000] transition-colors"
                             style={SANS}
                           >
-                            {l}
+                            {link.label}
                           </Link>
                         ))}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -195,7 +200,7 @@ export function Navbar() {
               </div>
 
               <Link
-                to="/shop?filter=New Arrivals"
+                to="/shop?sort=rating"
                 className="text-[11px] font-semibold text-gray-800 hover:text-[#800000] transition-colors uppercase tracking-wider whitespace-nowrap"
                 style={SANS}
               >

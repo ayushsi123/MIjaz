@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { auth, db, storage } from "../lib/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, orderBy, query, getDoc, setDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, orderBy, query, getDoc, setDoc, runTransaction } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -22,7 +22,7 @@ export function Admin() {
   const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [combos, setCombos] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'invoices' | 'combos' | 'homepage'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'invoices' | 'combos' | 'homepage' | 'settings'>('products');
   
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [editingComboId, setEditingComboId] = useState<string | null>(null);
@@ -36,7 +36,6 @@ export function Admin() {
   const [stock50ml, setStock50ml] = useState("");
   const [description, setDescription] = useState("");
   const [narrative, setNarrative] = useState("");
-  const [composition, setComposition] = useState("");
   const [wearGuide, setWearGuide] = useState("");
   const [giftingDetails, setGiftingDetails] = useState("");
   const [imgUrl, setImgUrl] = useState("");
@@ -44,6 +43,7 @@ export function Admin() {
   const [gender, setGender] = useState("Unisex");
   const [occasion, setOccasion] = useState("Any");
   const [selectedNotes, setSelectedNotes] = useState<string[]>([]);
+
   const [uploading, setUploading] = useState(false);
 
   // Offline Invoice State
@@ -51,6 +51,8 @@ export function Admin() {
   const [offlineName, setOfflineName] = useState("");
   const [offlinePhone, setOfflinePhone] = useState("");
   const [offlineAddress, setOfflineAddress] = useState("");
+  const [offlineState, setOfflineState] = useState("Delhi");
+  const [offlinePincode, setOfflinePincode] = useState("");
   const [offlineItems, setOfflineItems] = useState([{ productId: "", name: "", price: "", qty: "1" }]);
 
   // New Combo State
@@ -58,6 +60,7 @@ export function Admin() {
   const [comboDescription, setComboDescription] = useState("");
   const [comboImgUrl, setComboImgUrl] = useState("");
   const [comboItems, setComboItems] = useState<{ productId: string; size: string }[]>([]);
+  const [comboDiscount, setComboDiscount] = useState<number>(0);
 
   const navigate = useNavigate();
 
@@ -116,7 +119,11 @@ export function Admin() {
     categoryPerfumeRange: "",
     categoryOilRange: "",
     promoBanner: "",
+    invoicePrefix: "SHIVARTH-2026-27/",
+    nextInvoiceSequence: 1,
+    availableNotes: NOTES
   });
+  const [newSettingNote, setNewSettingNote] = useState("");
   const [savingSettings, setSavingSettings] = useState(false);
 
   const fetchHomepageSettings = async () => {
@@ -169,6 +176,18 @@ export function Admin() {
     } catch (error) {
       console.error("Error updating order status", error);
       toast.error("Failed to update status");
+    }
+  };
+
+  const handleDeleteOrder = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this invoice/order?")) return;
+    try {
+      await deleteDoc(doc(db, "orders", id));
+      toast.success("Order/Invoice deleted successfully!");
+      fetchOrders();
+    } catch (error: any) {
+      toast.error("Failed to delete order/invoice.");
+      console.error(error);
     }
   };
 
@@ -263,7 +282,6 @@ export function Admin() {
         name,
         description,
         narrative,
-        composition,
         wearGuide,
         giftingDetails,
         category,
@@ -294,7 +312,6 @@ export function Admin() {
       setSizeOption("50ml");
       setDescription("");
       setNarrative("");
-      setComposition("");
       setWearGuide("");
       setGiftingDetails("");
       setImgUrl("");
@@ -329,7 +346,6 @@ export function Admin() {
     }
     setDescription(p.description);
     setNarrative(p.narrative || "");
-    setComposition(p.composition || "");
     setWearGuide(p.wearGuide || "");
     setGiftingDetails(p.giftingDetails || "");
     setImgUrl(p.img || "");
@@ -385,6 +401,7 @@ export function Admin() {
         description: comboDescription,
         items: comboItems,
         img: comboImgUrl,
+        discountPercentage: comboDiscount,
       };
 
       if (editingComboId) {
@@ -400,6 +417,7 @@ export function Admin() {
       setComboDescription("");
       setComboImgUrl("");
       setComboItems([]);
+      setComboDiscount(0);
       fetchCombos();
     } catch (error: any) {
       toast.error(error.message);
@@ -412,6 +430,7 @@ export function Admin() {
     setComboDescription(c.description);
     setComboImgUrl(c.img || "");
     setComboItems(c.items || []);
+    setComboDiscount(c.discountPercentage || 0);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -459,6 +478,12 @@ export function Admin() {
           className={`pb-3 px-2 uppercase tracking-widest text-xs font-bold ${activeTab === 'homepage' ? 'border-b-2 border-[#800000] text-[#800000]' : 'text-gray-400 hover:text-gray-800'}`}
         >
           Homepage
+        </button>
+        <button 
+          onClick={() => setActiveTab('settings')}
+          className={`pb-3 px-2 uppercase tracking-widest text-xs font-bold ${activeTab === 'settings' ? 'border-b-2 border-[#800000] text-[#800000]' : 'text-gray-400 hover:text-gray-800'}`}
+        >
+          Settings
         </button>
       </div>
 
@@ -649,7 +674,7 @@ export function Admin() {
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Scent Notes</label>
               <div className="flex flex-wrap gap-2">
-                {NOTES.map(note => (
+                {Array.from(new Set([...(homepageSettings.availableNotes || NOTES), ...selectedNotes])).map(note => (
                   <button
                     key={note}
                     type="button"
@@ -676,10 +701,6 @@ export function Admin() {
               <textarea value={narrative} onChange={e => setNarrative(e.target.value)} className="w-full border p-2 h-20" />
             </div>
 
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Composition</label>
-              <textarea value={composition} onChange={e => setComposition(e.target.value)} className="w-full border p-2 h-20" />
-            </div>
 
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Wear Guide</label>
@@ -712,7 +733,6 @@ export function Admin() {
                     setSizeOption("50ml");
                     setDescription("");
                     setNarrative("");
-                    setComposition("");
                     setWearGuide("");
                     setGiftingDetails("");
                     setImgUrl("");
@@ -843,30 +863,78 @@ export function Admin() {
                       value={item.productId}
                       onChange={(e) => {
                         const newItems = [...comboItems];
-                        newItems[index].productId = e.target.value;
+                        const newProdId = e.target.value;
+                        newItems[index].productId = newProdId;
+                        
+                        // Auto-select the first available size
+                        const prod = products.find(p => String(p.id) === String(newProdId));
+                        if (prod) {
+                          if (prod.stock50ml && Number(prod.stock50ml) > 0) newItems[index].size = "50ml";
+                          else if (prod.stock30ml && Number(prod.stock30ml) > 0) newItems[index].size = "30ml";
+                        }
+                        
                         setComboItems(newItems);
                       }}
                       className="flex-1 border p-2 text-xs"
                       required
                     >
                       <option value="">Select Product...</option>
-                      {products.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
+                      {products
+                        .filter(p => {
+                          if (!p.stock) return true; // Legacy product, no explicit stock
+                          // Out of stock if ALL sizes have 0 or less stock
+                          const allOutOfStock = (p.sizes || []).every(size => !p.stock![size] || p.stock![size] <= 0);
+                          return !allOutOfStock;
+                        })
+                        .map(p => {
+                          const stockText = [];
+                          if (p.stock?.["30ml"] && Number(p.stock["30ml"]) > 0) stockText.push(`${p.stock["30ml"]}x30ml`);
+                          if (p.stock?.["50ml"] && Number(p.stock["50ml"]) > 0) stockText.push(`${p.stock["50ml"]}x50ml`);
+                          
+                          let label = p.name;
+                          if (stockText.length > 0) {
+                            label += ` (${stockText.join(", ")})`;
+                          }
+                          return (
+                            <option key={p.id} value={p.id}>{label}</option>
+                          );
+                      })}
                     </select>
-                    <select
-                      value={item.size}
-                      onChange={(e) => {
-                        const newItems = [...comboItems];
-                        newItems[index].size = e.target.value;
-                        setComboItems(newItems);
-                      }}
-                      className="w-24 border p-2 text-xs"
-                    >
-                      <option value="8ml">8ml</option>
-                      <option value="20ml">20ml</option>
-                      <option value="50ml">50ml</option>
-                    </select>
+
+                    {(() => {
+                      const selectedProd = products.find(p => String(p.id) === String(item.productId));
+                      const availableSizes = [];
+                      if (selectedProd) {
+                        if (selectedProd.stock?.["30ml"] && Number(selectedProd.stock["30ml"]) > 0) availableSizes.push("30ml");
+                        if (selectedProd.stock?.["50ml"] && Number(selectedProd.stock["50ml"]) > 0) availableSizes.push("50ml");
+                        
+                        // Fallback to legacy price entries if no stock tracking is setup for this product
+                        if (availableSizes.length === 0) {
+                          if (selectedProd.prices?.["30ml"] || selectedProd.salePrices?.["30ml"]) availableSizes.push("30ml");
+                          if (selectedProd.prices?.["50ml"] || selectedProd.salePrices?.["50ml"]) availableSizes.push("50ml");
+                        }
+                      }
+                      
+                      // Final fallback
+                      if (availableSizes.length === 0) availableSizes.push("30ml", "50ml");
+
+                      return (
+                        <select
+                          value={item.size}
+                          onChange={(e) => {
+                            const newItems = [...comboItems];
+                            newItems[index].size = e.target.value;
+                            setComboItems(newItems);
+                          }}
+                          className={`w-24 border p-2 text-xs ${!item.productId ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                          disabled={!item.productId}
+                        >
+                          {availableSizes.map(size => (
+                            <option key={size} value={size}>{size}</option>
+                          ))}
+                        </select>
+                      );
+                    })()}
                     <button 
                       type="button"
                       onClick={() => {
@@ -889,6 +957,57 @@ export function Admin() {
                 </button>
               </div>
 
+              {comboItems.length > 0 && (() => {
+                const baseComboPrice = comboItems.reduce((sum, item) => {
+                  const prod = products.find(p => String(p.id) === String(item.productId));
+                  if (!prod) return sum;
+                  const price = prod.salePrices?.[item.size] ?? prod.prices?.[item.size] ?? prod.price ?? 0;
+                  return sum + Number(price);
+                }, 0);
+
+                return (
+                  <div className="bg-white p-4 border border-gray-200 mt-4 rounded shadow-sm">
+                    {/* Price Breakdown */}
+                    <div className="mb-4 pb-4 border-b border-gray-100">
+                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2 block">Price Breakdown</span>
+                      {comboItems.map((item, idx) => {
+                        const prod = products.find(p => String(p.id) === String(item.productId));
+                        if (!prod) return null;
+                        const price = prod.salePrices?.[item.size] ?? prod.prices?.[item.size] ?? prod.price ?? 0;
+                        return (
+                          <div key={idx} className="flex justify-between items-center text-sm mb-1 text-gray-600">
+                            <span>{prod.name} <span className="text-xs opacity-70">({item.size})</span></span>
+                            <span>Rs. {Number(price).toLocaleString()}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Total Base Price</span>
+                      <span className="font-semibold text-gray-500 text-sm">Rs. {baseComboPrice.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-[10px] font-bold text-[#800000] uppercase tracking-wider">Discount (%)</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={comboDiscount}
+                        onChange={(e) => setComboDiscount(Number(e.target.value))}
+                        className="border border-[#800000]/20 rounded p-1 w-20 text-right text-sm font-semibold focus:outline-none focus:border-[#800000]"
+                      />
+                    </div>
+                    <div className="flex justify-between items-center pt-3 border-t border-gray-100">
+                      <span className="text-xs font-bold text-gray-900 uppercase tracking-widest">Final Price</span>
+                      <span className="font-bold text-lg text-[#800000]">
+                        Rs. {Math.max(0, Math.floor(baseComboPrice * (1 - comboDiscount / 100))).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="flex gap-2">
                 <button 
                   type="submit" 
@@ -908,6 +1027,7 @@ export function Admin() {
                       setComboDescription("");
                       setComboImgUrl("");
                       setComboItems([]);
+                      setComboDiscount(0);
                     }}
                     className="flex-1 border border-gray-300 py-3 uppercase tracking-widest text-xs font-bold hover:bg-gray-100 transition-colors"
                   >
@@ -1004,7 +1124,7 @@ export function Admin() {
                           {order.status}
                         </span>
                       </td>
-                      <td className="p-4">
+                      <td className="p-4 flex gap-2 items-center">
                         <select 
                           className="text-xs border border-gray-300 rounded p-1"
                           value={order.status}
@@ -1018,6 +1138,13 @@ export function Admin() {
                           <option value="Delivered">Delivered</option>
                           <option value="Cancelled">Cancelled</option>
                         </select>
+                        <button
+                          onClick={() => handleDeleteOrder(order.id)}
+                          className="text-red-500 hover:text-red-700 p-1"
+                          title="Delete Order"
+                        >
+                          <X size={16} />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -1075,7 +1202,7 @@ export function Admin() {
                           {order.status}
                         </span>
                       </td>
-                      <td className="p-4 text-right">
+                      <td className="p-4 flex justify-end gap-2">
                         <button
                           onClick={() => {
                             generateInvoicePDF({
@@ -1086,6 +1213,8 @@ export function Admin() {
                               email: order.shippingAddress?.email || "N/A",
                               phone: order.shippingAddress?.phone || "N/A",
                               address: order.shippingAddress?.address || "Store Purchase",
+                              state: order.shippingAddress?.state === "Store" ? "Delhi" : (order.shippingAddress?.state || "Delhi"),
+                              pincode: order.shippingAddress?.pincode === "000000" ? "" : (order.shippingAddress?.pincode || ""),
                               items: order.cart?.map((c: any) => ({
                                 name: c.name,
                                 desc: c.size,
@@ -1104,6 +1233,12 @@ export function Admin() {
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 hover:bg-[#800000] hover:text-white rounded text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
                         >
                           <Download size={14} /> PDF
+                        </button>
+                        <button
+                          onClick={() => handleDeleteOrder(order.id)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                        >
+                          <X size={14} /> Delete
                         </button>
                       </td>
                     </tr>
@@ -1137,6 +1272,16 @@ export function Admin() {
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Address</label>
                     <textarea value={offlineAddress} onChange={(e) => setOfflineAddress(e.target.value)} className="w-full border p-2 rounded" placeholder="Customer Address" rows={2}></textarea>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">State</label>
+                      <input type="text" value={offlineState} onChange={(e) => setOfflineState(e.target.value)} className="w-full border p-2 rounded" placeholder="Delhi" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Pincode</label>
+                      <input type="text" value={offlinePincode} onChange={(e) => setOfflinePincode(e.target.value)} className="w-full border p-2 rounded" placeholder="110001" />
+                    </div>
                   </div>
                   
                   <div className="pt-2">
@@ -1229,10 +1374,27 @@ export function Admin() {
                           return;
                         }
                         
-                        const invoiceNoStr = `OFF-${Math.floor(Math.random() * 100000)}`;
-
-                        // Save offline order to Firebase so it appears in the table
-                        addDoc(collection(db, "orders"), {
+                        runTransaction(db, async (transaction) => {
+                          const settingsRef = doc(db, "settings", "homepage");
+                          const sfDoc = await transaction.get(settingsRef);
+                          
+                          let prefix = "MJZ-2026-27/";
+                          let seq = 1;
+                  
+                          if (sfDoc.exists()) {
+                            const data = sfDoc.data();
+                            if (data.invoicePrefix) prefix = data.invoicePrefix;
+                            if (data.nextInvoiceSequence) seq = data.nextInvoiceSequence;
+                          }
+                  
+                          const invoiceNoStr = `${prefix}${seq.toString().padStart(3, '0')}`;
+                          transaction.set(settingsRef, { nextInvoiceSequence: seq + 1 }, { merge: true });
+                          return invoiceNoStr;
+                        }).then((invoiceNoStr) => {
+                          const docId = invoiceNoStr.replace(/\//g, '-');
+                          // Save offline order to Firebase so it appears in the table
+                          setDoc(doc(db, "orders", docId), {
+                          orderId: invoiceNoStr,
                           createdAt: new Date().toISOString(),
                           shippingAddress: {
                             name: offlineName || "Walk-in Customer",
@@ -1240,8 +1402,8 @@ export function Admin() {
                             email: "N/A",
                             address: offlineAddress || "Store Purchase",
                             city: "Store",
-                            state: "Store",
-                            pincode: "000000",
+                            state: offlineState || "Delhi",
+                            pincode: offlinePincode || "",
                           },
                           cart: items.map(i => ({
                             name: i.name,
@@ -1254,42 +1416,140 @@ export function Admin() {
                           paymentMethod: "Cash",
                           status: "DELIVERED",
                           isOffline: true
-                        }).then(() => {
-                          fetchOrders(); // refresh table
-                          toast.success("Offline invoice saved successfully!");
-                        }).catch(e => {
-                          console.error("Failed to save offline invoice:", e);
-                          toast.error("Saved locally only, database error.");
+                          }).then(() => {
+                            fetchOrders();
+                            toast.success("Offline invoice saved successfully!");
+                            generateInvoicePDF({
+                              invoiceNo: invoiceNoStr,
+                              date: new Date().toLocaleDateString('en-GB'),
+                              dueDate: new Date().toLocaleDateString('en-GB'),
+                              customerName: offlineName || "Walk-in Customer",
+                              email: "N/A",
+                              phone: offlinePhone || "N/A",
+                              address: offlineAddress || "Store Purchase",
+                              state: offlineState || "Delhi",
+                              pincode: offlinePincode || "",
+                              items: items,
+                              subtotal: total,
+                              tax: 0,
+                              total: total,
+                              paymentDetails: "Paid in store",
+                              message: "Thank you for visiting Mijaz Luxury Perfumery.",
+                              jobDesc: "Offline Purchase"
+                            });
+                            
+                            setOfflineName("");
+                            setOfflinePhone("");
+                            setOfflineAddress("");
+                            setOfflineState("");
+                            setOfflinePincode("");
+                            setOfflineItems([{ productId: "", name: "", price: "", qty: "1" }]);
+                            setShowOfflineModal(false);
+                          }).catch(e => {
+                            console.error("Failed to save offline invoice:", e);
+                            toast.error("Saved locally only, database error.");
+                          });
                         });
-
-                        generateInvoicePDF({
-                          invoiceNo: invoiceNoStr,
-                          date: new Date().toLocaleDateString('en-GB'),
-                          dueDate: new Date().toLocaleDateString('en-GB'),
-                          customerName: offlineName || "Walk-in Customer",
-                          email: "N/A",
-                          phone: offlinePhone || "N/A",
-                          address: offlineAddress || "Store Purchase",
-                          items: items,
-                          subtotal: total,
-                          tax: 0,
-                          total: total,
-                          paymentDetails: "Paid in store",
-                          message: "Thank you for visiting Mijaz Luxury Perfumery.",
-                          jobDesc: "Offline Purchase"
-                        });
-                        
-                        setShowOfflineModal(false);
                       }}
                       className="flex-1 py-2 bg-[#800000] text-white font-bold uppercase text-xs tracking-wider rounded flex justify-center items-center gap-2 hover:bg-[#5a0000]"
-                    >
-                      <Download size={14} /> Download PDF
-                    </button>
+                      >
+                        <Download size={14} /> Download PDF
+                      </button>
                   </div>
                 </div>
               </div>
             </div>
           )}
+        </div>
+      ) : activeTab === 'settings' ? (
+        <div className="bg-white p-6 shadow-sm rounded-sm mb-12">
+          <h2 className="text-xl font-semibold mb-6" style={{ fontFamily: "'Playfair Display', serif" }}>General Settings</h2>
+          
+          <div className="space-y-6 max-w-2xl">
+            <h3 className="text-lg font-semibold border-b pb-2">Invoice & Order Sequences</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1">Invoice/Order Prefix</label>
+                <input 
+                  type="text" 
+                  className="w-full border p-2 focus:outline-none focus:border-[#800000]"
+                  value={(homepageSettings as any).invoicePrefix || ""}
+                  onChange={(e) => setHomepageSettings({ ...homepageSettings, invoicePrefix: e.target.value } as any)}
+                  placeholder="e.g. SHIVARTH-2026-27/"
+                />
+              </div>
+              <div>
+                <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1">Next Sequence Number</label>
+                <input 
+                  type="number" 
+                  className="w-full border p-2 focus:outline-none focus:border-[#800000]"
+                  value={(homepageSettings as any).nextInvoiceSequence || 1}
+                  onChange={(e) => setHomepageSettings({ ...homepageSettings, nextInvoiceSequence: parseInt(e.target.value) || 1 } as any)}
+                />
+              </div>
+            </div>
+            
+            <h3 className="text-lg font-semibold border-b pb-2 mt-8">Manage Scent Notes</h3>
+            <p className="text-sm text-gray-500 mb-2">These notes will appear as options when adding products, and in the Shop page filters.</p>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {homepageSettings.availableNotes?.map((note, index) => (
+                <div key={index} className="flex items-center gap-1 bg-gray-100 px-3 py-1 rounded-full border text-sm">
+                  {note}
+                  <button onClick={() => {
+                    const newNotes = [...homepageSettings.availableNotes];
+                    newNotes.splice(index, 1);
+                    setHomepageSettings({ ...homepageSettings, availableNotes: newNotes });
+                  }} className="text-gray-500 hover:text-[#800000] ml-1">
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2 max-w-sm">
+              <input
+                type="text"
+                value={newSettingNote}
+                onChange={(e) => setNewSettingNote(e.target.value)}
+                placeholder="New scent note (e.g. Peach)"
+                className="flex-1 border border-gray-300 px-3 py-2 text-sm rounded focus:outline-none focus:border-[#800000]"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (newSettingNote.trim() && !homepageSettings.availableNotes?.includes(newSettingNote.trim())) {
+                      setHomepageSettings({ 
+                        ...homepageSettings, 
+                        availableNotes: [...(homepageSettings.availableNotes || []), newSettingNote.trim()] 
+                      });
+                      setNewSettingNote("");
+                    }
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (newSettingNote.trim() && !homepageSettings.availableNotes?.includes(newSettingNote.trim())) {
+                    setHomepageSettings({ 
+                      ...homepageSettings, 
+                      availableNotes: [...(homepageSettings.availableNotes || []), newSettingNote.trim()] 
+                    });
+                    setNewSettingNote("");
+                  }
+                }}
+                className="px-4 py-2 bg-gray-100 border border-gray-300 text-gray-700 text-sm font-bold uppercase tracking-wider rounded hover:bg-gray-200 transition-colors"
+              >
+                Add Note
+              </button>
+            </div>
+
+            <button 
+              onClick={saveHomepageSettings}
+              disabled={savingSettings}
+              className={`mt-6 w-full py-3 bg-[#800000] text-white font-bold uppercase text-xs tracking-widest hover:bg-[#5a0000] transition-colors ${savingSettings ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {savingSettings ? 'Saving...' : 'Save Settings'}
+            </button>
+          </div>
         </div>
       ) : null}
     </div>

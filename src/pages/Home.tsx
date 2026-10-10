@@ -3,7 +3,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { Link, useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ArrowRight, Package, Wind, Droplet } from "lucide-react";
-import { BLENDS, CATEGORIES, NOTES } from "../data/products";
+import { BLENDS, CATEGORIES } from "../data/products";
 import { ProductCard } from "../components/ProductCard";
 import { useCart } from "../hooks/useCart";
 import heroBanner from "../imports/hero.png";

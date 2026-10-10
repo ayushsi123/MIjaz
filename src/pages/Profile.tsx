@@ -455,6 +455,40 @@ export function Profile() {
                           )}
                           <button
                             onClick={() => {
+                              import("../lib/pdfGenerator").then(({ generateInvoicePDF }) => {
+                                generateInvoicePDF({
+                                  invoiceNo: order.orderId || order.id,
+                                  date: order.date || new Date().toLocaleDateString('en-GB'),
+                                  dueDate: order.date || new Date().toLocaleDateString('en-GB'),
+                                  customerName: order.shippingAddress?.name || profile.name,
+                                  email: order.shippingAddress?.email || profile.email,
+                                  phone: order.shippingAddress?.phone || profile.phone,
+                                  address: order.shippingAddress?.address || "N/A",
+                                  state: order.shippingAddress?.state || "Delhi",
+                                  pincode: order.shippingAddress?.pincode || "",
+                                  items: order.items.map((i: any) => ({
+                                    name: i.name,
+                                    desc: i.size,
+                                    qty: i.qty,
+                                    price: i.price,
+                                    amount: i.price * i.qty
+                                  })),
+                                  subtotal: order.total,
+                                  tax: 0,
+                                  total: order.total,
+                                  paymentDetails: order.paymentMethod === 'COD' ? "Cash on Delivery" : `Paid via ${order.paymentMethod}`,
+                                  message: "Thank you for choosing Mijaz Luxury Perfumery.",
+                                  jobDesc: "Online Order"
+                                });
+                              });
+                            }}
+                            className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-black transition-colors cursor-pointer"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            Invoice
+                          </button>
+                          <button
+                            onClick={() => {
                               setTrackingOrder(order);
                               setTrackModalOpen(true);
                             }}
