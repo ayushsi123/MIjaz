@@ -5,3 +5,4 @@ dist
 scratch
 src_unzipped
 .DS_Store
+.agents
