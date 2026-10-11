@@ -43,6 +43,10 @@ export function formatAuthError(error: any): string {
       return "Too many requests. Please wait a few moments before trying again.";
     case "auth/network-request-failed":
       return "Network connection error. Please check your internet connection.";
+    case "auth/operation-not-allowed":
+      return "Phone authentication is not enabled or India (+91) SMS region is not permitted in Firebase Console. Please enable Phone in Firebase Console > Authentication > Sign-in method & SMS Region Policy.";
+    case "auth/billing-not-enabled":
+      return "Sending real carrier SMS requires the Firebase Blaze (Pay as you go) plan. Please upgrade to Blaze in Firebase Console (first 10,000 SMS/month are free), or use Google Sign-in / Email & Password, or configure free test phone numbers.";
     case "auth/requires-recent-login":
       return "Please sign in again to complete this sensitive action.";
     default:
