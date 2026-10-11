@@ -128,6 +128,39 @@ export function Navbar() {
                         <Link to="/shop?category=Perfume Oils" onClick={() => setMobileMenuOpen(false)} className="text-sm text-gray-600">Perfume Oils</Link>
                       </div>
                     </div>
+
+                    <div className="pt-4 border-t border-gray-100 mt-2">
+                      {isLoggedIn ? (
+                        <div className="space-y-2.5">
+                          <div className="bg-[#800000]/5 border border-[#800000]/15 p-3 rounded-lg">
+                            <p className="text-xs font-bold text-gray-900">{profile.name || "Customer"}</p>
+                            <p className="text-[10px] text-gray-500 truncate">{profile.email || profile.phone || "Logged in"}</p>
+                          </div>
+                          <Link to="/profile?tab=orders" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-semibold text-gray-700 hover:text-[#800000]">My Orders</Link>
+                          <Link to="/profile?tab=addresses" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-semibold text-gray-700 hover:text-[#800000]">Address Book</Link>
+                          <Link to="/profile?tab=personal" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-semibold text-gray-700 hover:text-[#800000]">Personal Info</Link>
+                          <button
+                            onClick={() => {
+                              logout();
+                              setMobileMenuOpen(false);
+                            }}
+                            className="block text-xs font-bold text-red-600 text-left pt-1 cursor-pointer"
+                          >
+                            Sign Out
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setMobileMenuOpen(false);
+                            setAuthModalOpen(true);
+                          }}
+                          className="w-full bg-[#800000] hover:bg-[#D4AF37] hover:text-black transition-colors text-white py-2.5 text-xs font-bold uppercase tracking-wider rounded-lg text-center cursor-pointer shadow-xs"
+                        >
+                          Sign In / Register
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </SheetContent>
               </Sheet>
@@ -272,15 +305,15 @@ export function Navbar() {
                 className="text-[11px] font-semibold text-gray-700 hover:text-[#800000] transition-colors whitespace-nowrap uppercase tracking-wider flex items-center gap-0.5 cursor-pointer"
                 style={SANS}
               >
-                {isLoggedIn ? "Account" : "Sign In"}
+                {isLoggedIn ? (profile.name?.split(" ")[0] || "Account") : "Sign In"}
                 {isLoggedIn && <ChevronDown size={8} />}
               </button>
               
               {profileDropdownOpen && isLoggedIn && (
                 <div className="absolute right-0 top-[35px] bg-white border border-gray-100 shadow-xl min-w-[200px] z-50 rounded-lg" style={SANS}>
                   <div className="bg-gray-50/50 px-4 py-3 border-b border-gray-100">
-                    <p className="text-[12px] font-semibold text-gray-900">{profile.name}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5 truncate">{profile.email}</p>
+                    <p className="text-[12px] font-semibold text-gray-900 truncate">{profile.name || "Customer"}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5 truncate">{profile.email || profile.phone || "Member"}</p>
                   </div>
                   {[
                     ["My Orders", "/profile?tab=orders"],

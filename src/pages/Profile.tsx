@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useCart } from "../hooks/useCart";
-import { User, MapPin, Package, ClipboardList, CheckCircle2, ChevronRight, Plus, Trash2, Edit2 } from "lucide-react";
+import { User, MapPin, Package, ClipboardList, CheckCircle2, ChevronRight, Plus, Trash2, Edit2, LogIn } from "lucide-react";
 import { Address } from "../types";
 import { db } from "../lib/firebase";
 import { collection, query, where, getDocs, orderBy, onSnapshot, doc, updateDoc } from "firebase/firestore";
 import perfume50ml from "../imports/perfume-50ml.jpg";
+import { AuthModal } from "../components/AuthModal";
 
 const SANS = { fontFamily: "'DM Sans', sans-serif" } as const;
 const CINZEL = { fontFamily: "'Cinzel', serif" } as const;
@@ -28,7 +29,8 @@ export function Profile() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "addresses";
 
-  const { profile, updateProfile, addAddress, removeAddress, updateAddress, setTrackingOrder, setTrackModalOpen } = useCart();
+  const { isLoggedIn, profile, updateProfile, addAddress, removeAddress, updateAddress, setTrackingOrder, setTrackModalOpen } = useCart();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   // Tab switching
   const handleTabChange = (tab: string) => {
@@ -172,6 +174,29 @@ export function Profile() {
     setShowAddressForm(true);
   };
 
+  if (!isLoggedIn) {
+    return (
+      <div className="bg-[#FAF8F4] min-h-[70vh] flex items-center justify-center p-6" style={SANS}>
+        <div className="max-w-md w-full bg-white p-8 md:p-10 rounded-2xl shadow-xl border border-gray-150 text-center">
+          <div className="w-16 h-16 rounded-full bg-[#800000]/10 flex items-center justify-center mx-auto mb-4 text-[#800000]">
+            <User size={30} />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2" style={CINZEL}>Account Authentication</h2>
+          <p className="text-xs text-gray-500 leading-relaxed mb-6">
+            Please sign in to view your orders, saved addresses, and personal fragrance preferences.
+          </p>
+          <button
+            onClick={() => setAuthModalOpen(true)}
+            className="w-full bg-[#800000] hover:bg-[#D4AF37] hover:text-black text-white py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-sm"
+          >
+            Sign In / Register
+          </button>
+          <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-[#FAF8F4] min-h-screen pb-16" style={SANS}>
       {/* Black Header Column with red profile card */}
@@ -179,11 +204,11 @@ export function Profile() {
         <div className="max-w-[1200px] mx-auto px-6 flex items-center gap-6">
           {/* Circular red avatar with gold initial */}
           <div className="w-16 h-16 rounded-full bg-[#800000] border-2 border-[#D4AF37]/50 flex items-center justify-center font-bold text-white text-2xl shadow-md" style={CINZEL}>
-            {name.charAt(0).toUpperCase()}
+            {(name || "M").charAt(0).toUpperCase()}
           </div>
           <div>
-            <h1 className="text-xl font-semibold tracking-wide" style={SANS}>{name}</h1>
-            <p className="text-gray-400 text-xs mt-0.5">{email}</p>
+            <h1 className="text-xl font-semibold tracking-wide" style={SANS}>{name || "Valued Customer"}</h1>
+            <p className="text-gray-400 text-xs mt-0.5">{email || phone || "Member"}</p>
           </div>
         </div>
       </div>

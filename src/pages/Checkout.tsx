@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../hooks/useCart";
 import { CreditCard, ShoppingBag, ShieldCheck, MapPin, Truck, CheckCircle2, QrCode } from "lucide-react";
@@ -32,6 +32,18 @@ export function Checkout() {
   const [saveAddress, setSaveAddress] = useState(!defaultAddr);
   const [saveAsLabel, setSaveAsLabel] = useState("Home");
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (profile?.name && !name) setName(profile.name);
+    if (profile?.email && !email) setEmail(profile.email);
+    if (profile?.phone && !phone) setPhone(profile.phone);
+    if (defaultAddr) {
+      if (!address) setAddress(defaultAddr.street || "");
+      if (!city) setCity(defaultAddr.city || "");
+      if (!state) setState(defaultAddr.state || "");
+      if (!pincode) setPincode(defaultAddr.postalCode || "");
+    }
+  }, [profile, defaultAddr]);
 
   // Payment Selection
   const [paymentMethod, setPaymentMethod] = useState<"COD" | "UPI" | "CC">("COD");

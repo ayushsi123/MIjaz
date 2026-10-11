@@ -3,8 +3,9 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
 import { X, Truck } from "lucide-react";
 import { useCart } from "../hooks/useCart";
-
-
+import { auth } from "../lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import { syncUserProfileWithFirestore } from "../lib/authService";
 
 // Components
 import { Navbar } from "../components/Navbar";
@@ -44,11 +45,38 @@ export default function App() {
     announcementBarEnabled,
     announcementBarText,
     setAnnouncementBarEnabled,
-    setAnnouncementBarText
+    setAnnouncementBarText,
+    setUserSession
   } = useCart();
 
   const isBannerVisible = announcementBarEnabled && !!announcementBarText?.trim();
   const [productsLoaded, setProductsLoaded] = useState(false);
+
+  // Sync Firebase authentication state globally
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        try {
+          const profile = await syncUserProfileWithFirestore(currentUser);
+          setUserSession(profile);
+        } catch (err) {
+          console.error("Error loading user profile:", err);
+          setUserSession({
+            uid: currentUser.uid,
+            name: currentUser.displayName || "Customer",
+            email: currentUser.email || "",
+            phone: currentUser.phoneNumber || "",
+            addresses: [],
+            orders: []
+          });
+        }
+      } else {
+        setUserSession(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [setUserSession]);
 
   useEffect(() => {
     // 1. Sync announcement bar settings in real-time from Firestore

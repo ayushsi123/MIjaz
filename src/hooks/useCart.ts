@@ -1,6 +1,9 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { CartItem, Product, Address, Order, UserProfile, Coupon } from "../types";
+import { auth } from "../lib/firebase";
+import { signOut } from "firebase/auth";
+import { updateFirestoreUserProfile } from "../lib/authService";
 
 export function calculateCouponDiscount(coupon: Coupon | null | undefined, total: number): number {
   if (!coupon || !coupon.isActive) return 0;
@@ -31,7 +34,9 @@ interface CartState {
   // Auth States & Actions
   isLoggedIn: boolean;
   setIsLoggedIn: (val: boolean) => void;
-  login: (name: string, email: string, phone: string) => void;
+  login: (name: string, email: string, phone: string, uid?: string) => void;
+  setUserSession: (profile: UserProfile | null) => void;
+  updateProfile: (updates: Partial<UserProfile>) => void;
   logout: () => void;
   
   // Coupon state
@@ -277,18 +282,48 @@ export const useCart = create<CartState>()(
       }),
       
       // Auth Initializers & Actions
-      isLoggedIn: true,
+      isLoggedIn: false,
       setIsLoggedIn: (val) => set({ isLoggedIn: val }),
-      login: (name, email, phone) => set((state) => ({
+      login: (name, email, phone, uid) => set((state) => ({
         isLoggedIn: true,
         profile: {
           ...state.profile,
-          name: name || "Aisha Khan",
-          email: email || "aisha.khan@email.com",
-          phone: phone || "+91 98765 43210"
+          name: name || state.profile.name || "Customer",
+          email: email || state.profile.email,
+          phone: phone || state.profile.phone,
+          uid: uid || state.profile.uid
         }
       })),
-      logout: () => set({ isLoggedIn: false }),
+      setUserSession: (profile) => set({
+        isLoggedIn: !!profile,
+        profile: profile || {
+          name: "",
+          email: "",
+          phone: "",
+          addresses: [],
+          orders: []
+        }
+      }),
+      updateProfile: (updates) => set((state) => {
+        const updated = { ...state.profile, ...updates };
+        if (updated.uid) {
+          updateFirestoreUserProfile(updated.uid, updates).catch(console.warn);
+        }
+        return { profile: updated };
+      }),
+      logout: () => {
+        signOut(auth).catch(console.warn);
+        set({
+          isLoggedIn: false,
+          profile: {
+            name: "",
+            email: "",
+            phone: "",
+            addresses: [],
+            orders: []
+          }
+        });
+      },
       
       giftWrap: false,
       setGiftWrap: (wrap) => set({ giftWrap: wrap }),
@@ -305,11 +340,11 @@ export const useCart = create<CartState>()(
       setCheckoutPaymentMethod: (method) => set({ checkoutPaymentMethod: method }),
 
       profile: {
-        name: "Aisha Khan",
-        email: "aisha.khan@email.com",
-        phone: "+91 98765 43210",
-        addresses: DEFAULT_ADDRESSES,
-        orders: DEFAULT_ORDERS
+        name: "",
+        email: "",
+        phone: "",
+        addresses: [],
+        orders: []
       },
       
       addAddress: (addr) => set((state) => {
@@ -320,15 +355,21 @@ export const useCart = create<CartState>()(
         const addresses = newAddress.isDefault
           ? state.profile.addresses.map((a) => ({ ...a, isDefault: false })).concat(newAddress)
           : state.profile.addresses.concat(newAddress);
-        return { profile: { ...state.profile, addresses } };
+        const updatedProfile = { ...state.profile, addresses };
+        if (state.profile.uid) {
+          updateFirestoreUserProfile(state.profile.uid, { addresses }).catch(console.warn);
+        }
+        return { profile: updatedProfile };
       }),
       
-      removeAddress: (id) => set((state) => ({
-        profile: {
-          ...state.profile,
-          addresses: state.profile.addresses.filter((a) => a.id !== id)
+      removeAddress: (id) => set((state) => {
+        const addresses = state.profile.addresses.filter((a) => a.id !== id);
+        const updatedProfile = { ...state.profile, addresses };
+        if (state.profile.uid) {
+          updateFirestoreUserProfile(state.profile.uid, { addresses }).catch(console.warn);
         }
-      })),
+        return { profile: updatedProfile };
+      }),
       
       updateAddress: (id, updatedFields) => set((state) => {
         let addresses = state.profile.addresses.map((a) =>
@@ -337,7 +378,11 @@ export const useCart = create<CartState>()(
         if (updatedFields.isDefault) {
           addresses = addresses.map((a) => (a.id === id ? a : { ...a, isDefault: false }));
         }
-        return { profile: { ...state.profile, addresses } };
+        const updatedProfile = { ...state.profile, addresses };
+        if (state.profile.uid) {
+          updateFirestoreUserProfile(state.profile.uid, { addresses }).catch(console.warn);
+        }
+        return { profile: updatedProfile };
       }),
       
       placeOrder: (order) => set((state) => ({
