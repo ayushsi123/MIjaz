@@ -218,7 +218,9 @@ export function ProductDetail() {
                 {product.name}
               </h1>
               <p className="text-sm text-gray-400 mb-6 italic">
-                {product.category === "Oil" ? "Eau De Parfum Concentrated Oil" : "Eau De Parfum Natural Spray"}
+                {product.concentration 
+                  ? (product.category === "Oil" ? `${product.concentration} Concentrated Oil` : `${product.concentration} Natural Spray`)
+                  : (product.category === "Oil" ? "Eau De Parfum Concentrated Oil" : "Eau De Parfum Natural Spray")}
               </p>
 
               {/* Scent Profile notes */}

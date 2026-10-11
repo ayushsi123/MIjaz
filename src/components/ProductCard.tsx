@@ -125,7 +125,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <h3 className="text-[12px] font-semibold text-gray-900 leading-snug mb-1">
             {product.name}{" "}
             <span className="font-normal text-gray-500">
-              | {product.category === "Oil" ? "Eau De Parfum Oil" : "Eau De Parfum"}
+              | {product.concentration || (product.category === "Oil" ? "Eau De Parfum Oil" : "Eau De Parfum")}
             </span>
           </h3>
         </Link>

@@ -18,6 +18,7 @@ export interface Product {
   id: number | string;
   name: string;
   category: "Perfume" | "Oil";
+  concentration?: "Eau de Parfum" | "Eau de Toilet" | "Parfum";
   gender: "Men" | "Women" | "Unisex";
   occasion: string;
   sizes: string[];

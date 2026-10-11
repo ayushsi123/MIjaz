@@ -57,6 +57,7 @@ export function Admin() {
   const [imgUrl, setImgUrl] = useState("");
   const [imgUrls, setImgUrls] = useState<string[]>([]);
   const [category, setCategory] = useState("Perfume");
+  const [concentration, setConcentration] = useState<"Eau de Parfum" | "Eau de Toilet" | "Parfum">("Eau de Parfum");
   const [gender, setGender] = useState("Unisex");
   const [occasion, setOccasion] = useState("Any");
   const [selectedNotes, setSelectedNotes] = useState<string[]>([]);
@@ -644,6 +645,7 @@ export function Admin() {
         wearGuide,
         giftingDetails,
         category,
+        concentration: concentration || "Eau de Parfum",
         gender,
         occasion,
         sizes: finalSizes,
@@ -672,6 +674,7 @@ export function Admin() {
       setStock30ml("");
       setStock50ml("");
       setSizeOption("50ml");
+      setConcentration("Eau de Parfum");
       setDescription("");
       setNarrative("");
       setWearGuide("");
@@ -688,6 +691,7 @@ export function Admin() {
   const handleEditProduct = (p: any) => {
     setEditingProductId(p.id);
     setName(p.name);
+    setConcentration(p.concentration || "Eau de Parfum");
     if (p.sizes?.includes("30ml") && p.sizes?.includes("50ml")) {
       setSizeOption("Both");
       const sell30 = p.salePrices?.["30ml"] || p.price || "";
@@ -1426,17 +1430,31 @@ export function Admin() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
+                  Type / Concentration*
+                </label>
+                <select 
+                  value={concentration} 
+                  onChange={e => setConcentration(e.target.value as any)} 
+                  className="w-full border p-2 bg-white text-xs font-medium focus:border-[#800000]"
+                >
+                  <option value="Eau de Parfum">Eau de Parfum</option>
+                  <option value="Eau de Toilet">Eau de Toilet</option>
+                  <option value="Parfum">Parfum</option>
+                </select>
+              </div>
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Category</label>
-                <select value={category} onChange={e => setCategory(e.target.value)} className="w-full border p-2">
+                <select value={category} onChange={e => setCategory(e.target.value)} className="w-full border p-2 bg-white text-xs">
                   <option value="Perfume">Perfume</option>
                   <option value="Oil">Oil</option>
                 </select>
               </div>
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Gender</label>
-                <select value={gender} onChange={e => setGender(e.target.value)} className="w-full border p-2">
+                <select value={gender} onChange={e => setGender(e.target.value)} className="w-full border p-2 bg-white text-xs">
                   <option value="Unisex">Unisex</option>
                   <option value="Men">Men</option>
                   <option value="Women">Women</option>
@@ -1506,6 +1524,7 @@ export function Admin() {
                     setPrice50ml("");
                     setMrp50ml("");
                     setSizeOption("50ml");
+                    setConcentration("Eau de Parfum");
                     setDescription("");
                     setNarrative("");
                     setWearGuide("");
@@ -1543,7 +1562,12 @@ export function Admin() {
                       <td className="p-4 font-medium flex items-center gap-3">
                         {p.img && <img src={p.img} alt={p.name} className="w-9 h-11 object-cover rounded shadow-xs" />}
                         <div className="flex flex-col">
-                          <span className="font-semibold text-gray-900">{p.name}</span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-semibold text-gray-900">{p.name}</span>
+                            <span className="text-[10px] text-gray-500 font-normal">
+                              | {p.concentration || (p.category === 'Oil' ? 'Eau De Parfum Oil' : 'Eau De Parfum')}
+                            </span>
+                          </div>
                           {Array.isArray(p.images) && p.images.length > 1 && (
                             <span className="text-[10px] text-gray-500 font-medium flex items-center gap-1 mt-0.5">
                               📷 {p.images.length} photos
