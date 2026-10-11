@@ -26,6 +26,10 @@ import { PaymentFailed } from "../pages/PaymentFailed";
 import { NotFound } from "../pages/NotFound";
 import { AdminLogin } from "../pages/AdminLogin";
 import { Admin } from "../pages/Admin";
+import { ReturnsPolicy } from "../pages/ReturnsPolicy";
+import { ShippingPolicy } from "../pages/ShippingPolicy";
+import { ContactUs } from "../pages/ContactUs";
+import { FAQs } from "../pages/FAQs";
 
 // Font Styles
 const SANS = { fontFamily: "'DM Sans', sans-serif" } as const;
@@ -99,6 +103,14 @@ export default function App() {
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/about" element={<About />} />
+            <Route path="/returns-exchanges" element={<ReturnsPolicy />} />
+            <Route path="/returns" element={<ReturnsPolicy />} />
+            <Route path="/shipping-policy" element={<ShippingPolicy />} />
+            <Route path="/shipping" element={<ShippingPolicy />} />
+            <Route path="/contact-us" element={<ContactUs />} />
+            <Route path="/contact" element={<ContactUs />} />
+            <Route path="/faqs" element={<FAQs />} />
+            <Route path="/faq" element={<FAQs />} />
             <Route path="/payment-failed" element={<PaymentFailed />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/admin/login" element={<AdminLogin />} />

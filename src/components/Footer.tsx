@@ -84,10 +84,10 @@ export function Footer() {
             <div className="flex flex-col gap-2.5 text-sm text-gray-400 mb-6">
               {[
                 ["Track My Order", "/profile?tab=orders"],
-                ["Returns & Exchanges", "/about"],
-                ["Shipping Policy", "/about"],
-                ["Contact Us", "/about"],
-                ["FAQs", "/about"]
+                ["Returns & Exchanges", "/returns-exchanges"],
+                ["Shipping Policy", "/shipping-policy"],
+                ["Contact Us", "/contact"],
+                ["FAQs", "/faqs"]
               ].map(([label, path]) => (
                 <Link key={label} to={path} className="hover:text-white transition-colors text-left">
                   {label}

@@ -72,9 +72,12 @@ export function About() {
               </p>
             </div>
             <div className="space-y-3">
-              <h3 className="font-bold text-xs uppercase tracking-wider text-[#800000]">Returns & Exchanges</h3>
+              <h3 className="font-bold text-xs uppercase tracking-wider text-[#800000]">Strict No-Return Policy</h3>
               <p className="text-xs text-gray-500 leading-relaxed">
-                Fragrance is highly personal. If a scent isn't to your liking, we offer hassle-free exchanges or returns within 7 days of delivery, provided the bottle is unopened. Contact support below.
+                For hygiene, health, and authenticity safety, all fragrance sales are final upon delivery. We do not accept returns or refunds. Transit damage replacements are supported with unboxing video proof.{" "}
+                <Link to="/returns-exchanges" className="text-[#800000] underline font-bold">
+                  Read Policy →
+                </Link>
               </p>
             </div>
             <div className="space-y-3">
