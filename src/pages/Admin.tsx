@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { NOTES } from "../data/products";
 
 import { generateInvoicePDF } from "../lib/pdfGenerator";
-import { Download, X, Pencil, Tag, Percent, Plus, Check, Trash2, Power, Star, UploadCloud, Megaphone } from "lucide-react";
+import { Download, X, Pencil, Tag, Percent, Plus, Check, Trash2, Power, Star, UploadCloud, Megaphone, ArrowUp, ArrowDown } from "lucide-react";
 import { useCart } from "../hooks/useCart";
 import { Coupon } from "../types";
 import heroBanner from "../imports/hero.png";
@@ -293,6 +293,7 @@ export function Admin() {
   const [homepageSettings, setHomepageSettings] = useState({
     announcementBarEnabled: true,
     announcementBarText: "Free Shipping above 999 INR | FLAT 10% OFF On Orders above 2499 INR (Automatically Applied) | COD Eligible Above 999 INR",
+    recommendedProductIds: [] as string[],
     heroBanner: "",
     categoryMen: "",
     categoryWomen: "",
@@ -306,6 +307,60 @@ export function Admin() {
   });
   const [newSettingNote, setNewSettingNote] = useState("");
   const [savingSettings, setSavingSettings] = useState(false);
+  const [selectedProductToAdd, setSelectedProductToAdd] = useState("");
+
+  const handleAddRecommendedProduct = (productId: string | number) => {
+    const idStr = String(productId);
+    if (!homepageSettings.recommendedProductIds?.includes(idStr)) {
+      setHomepageSettings(prev => ({
+        ...prev,
+        recommendedProductIds: [...(prev.recommendedProductIds || []), idStr]
+      }));
+      toast.success("Product added to Recommended list! Click 'Save' to apply.");
+    }
+  };
+
+  const handleRemoveRecommendedProduct = (productId: string | number) => {
+    const idStr = String(productId);
+    setHomepageSettings(prev => ({
+      ...prev,
+      recommendedProductIds: (prev.recommendedProductIds || []).filter(id => id !== idStr)
+    }));
+    toast.success("Product removed from Recommended list.");
+  };
+
+  const handleMoveRecommendedProduct = (index: number, direction: 'up' | 'down') => {
+    const list = [...(homepageSettings.recommendedProductIds || [])];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= list.length) return;
+    const temp = list[index];
+    list[index] = list[targetIndex];
+    list[targetIndex] = temp;
+    setHomepageSettings(prev => ({ ...prev, recommendedProductIds: list }));
+  };
+
+  const handleToggleRecommendedProductInList = async (productId: string | number) => {
+    const idStr = String(productId);
+    const isCurrently = homepageSettings.recommendedProductIds?.includes(idStr);
+    const updatedIds = isCurrently
+      ? (homepageSettings.recommendedProductIds || []).filter(id => id !== idStr)
+      : [...(homepageSettings.recommendedProductIds || []), idStr];
+
+    setHomepageSettings(prev => ({ ...prev, recommendedProductIds: updatedIds }));
+
+    try {
+      await setDoc(doc(db, "settings", "homepage"), { recommendedProductIds: updatedIds }, { merge: true });
+      try {
+        localStorage.setItem("mijaz_recommended_products", JSON.stringify(updatedIds));
+      } catch (e) {
+        console.warn("Storage cache warning:", e);
+      }
+      toast.success(isCurrently ? "Removed from Recommended!" : "Added to Recommended!");
+    } catch (e) {
+      console.error("Failed to update recommended status:", e);
+      toast.error("Failed to update recommended status");
+    }
+  };
 
   const fetchHomepageSettings = async () => {
     try {
@@ -324,7 +379,10 @@ export function Admin() {
         ...prev,
         ...combined,
         announcementBarEnabled: combined.announcementBarEnabled !== undefined ? Boolean(combined.announcementBarEnabled) : prev.announcementBarEnabled,
-        announcementBarText: typeof combined.announcementBarText === "string" ? combined.announcementBarText : prev.announcementBarText
+        announcementBarText: typeof combined.announcementBarText === "string" ? combined.announcementBarText : prev.announcementBarText,
+        recommendedProductIds: Array.isArray(combined.recommendedProductIds)
+          ? combined.recommendedProductIds.map(String)
+          : prev.recommendedProductIds || []
       }));
     } catch (error) {
       console.error("Error fetching homepage settings", error);
@@ -362,6 +420,7 @@ export function Admin() {
       // 3. Cache locally to eliminate any flicker on refresh
       try {
         localStorage.setItem("mijaz_homepage_images", JSON.stringify(imagesPayload));
+        localStorage.setItem("mijaz_recommended_products", JSON.stringify(homepageSettings.recommendedProductIds || []));
       } catch (e) {
         console.warn("Local storage cache warning:", e);
       }
@@ -931,6 +990,166 @@ export function Admin() {
               </div>
             </div>
 
+            {/* Specials: Recommended Products Configuration */}
+            <div className="bg-white p-6 border border-gray-200 rounded-xl shadow-xs space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+                <div className="flex items-start gap-3">
+                  <div className="p-2.5 bg-amber-500/10 text-amber-600 rounded-lg mt-0.5">
+                    <Star size={20} className="fill-amber-500/20" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900">
+                        Specials / Recommended Products Slider
+                      </h3>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200">
+                        {homepageSettings.recommendedProductIds?.length || 0} Selected
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Curate which real products from your catalog appear in the dark "Specials / Recommended" slider on the homepage.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Add Product Selector */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-2">
+                  Add Product to Recommended Slider
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <select
+                    value={selectedProductToAdd}
+                    onChange={(e) => setSelectedProductToAdd(e.target.value)}
+                    className="flex-1 border border-gray-300 rounded-lg p-2.5 text-xs bg-white focus:ring-1 focus:ring-[#800000] focus:border-[#800000] outline-hidden"
+                  >
+                    <option value="">-- Choose a product from your catalog --</option>
+                    {products
+                      .filter(p => !homepageSettings.recommendedProductIds?.includes(String(p.id)))
+                      .map(p => (
+                        <option key={p.id} value={String(p.id)}>
+                          {p.name} {p.category ? `(${p.category})` : ""} - Rs. {p.salePrices?.["50ml"] || p.salePrices?.["30ml"] || p.price || 0}
+                        </option>
+                      ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedProductToAdd) {
+                        handleAddRecommendedProduct(selectedProductToAdd);
+                        setSelectedProductToAdd("");
+                      }
+                    }}
+                    disabled={!selectedProductToAdd}
+                    className="bg-[#800000] text-white px-5 py-2.5 rounded-lg uppercase tracking-wider text-xs font-bold hover:bg-[#600000] transition disabled:opacity-40 flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap shadow-xs"
+                  >
+                    <Plus size={14} />
+                    <span>Add to Slider</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Currently Selected Products List */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                    Currently Selected Products ({homepageSettings.recommendedProductIds?.length || 0})
+                  </span>
+                  {homepageSettings.recommendedProductIds?.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setHomepageSettings(prev => ({ ...prev, recommendedProductIds: [] }))}
+                      className="text-[10px] text-red-500 hover:underline font-semibold cursor-pointer"
+                    >
+                      Clear All
+                    </button>
+                  )}
+                </div>
+
+                {(!homepageSettings.recommendedProductIds || homepageSettings.recommendedProductIds.length === 0) ? (
+                  <div className="bg-gray-50 border border-dashed border-gray-300 rounded-lg p-6 text-center text-xs text-gray-500">
+                    No products manually selected yet. Currently showing first products from catalog. Choose products above to curate this section!
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {homepageSettings.recommendedProductIds.map((id, index) => {
+                      const prod = products.find(p => String(p.id) === String(id));
+                      const img = prod?.img || (Array.isArray(prod?.images) && prod?.images[0]) || "";
+                      return (
+                        <div
+                          key={id}
+                          className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span className="text-xs font-bold text-gray-400 w-5 text-center">
+                              #{index + 1}
+                            </span>
+                            {img ? (
+                              <img src={img} alt={prod?.name || "Product"} className="w-10 h-12 object-cover rounded shadow-xs" />
+                            ) : (
+                              <div className="w-10 h-12 bg-gray-200 rounded flex items-center justify-center text-[9px] text-gray-400">
+                                No img
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <h4 className="text-xs font-bold text-gray-900 truncate">
+                                {prod?.name || `Product ID: ${id}`}
+                              </h4>
+                              <p className="text-[10px] text-gray-500 truncate">
+                                {prod?.notes?.slice(0, 3).join(" · ") || prod?.category || "Perfume"} · Rs. {prod?.salePrices?.["50ml"] || prod?.price || 0}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveRecommendedProduct(index, 'up')}
+                              disabled={index === 0}
+                              className="p-1.5 text-gray-500 hover:text-gray-900 disabled:opacity-20 cursor-pointer"
+                              title="Move Earlier in Slider"
+                            >
+                              <ArrowUp size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveRecommendedProduct(index, 'down')}
+                              disabled={index === homepageSettings.recommendedProductIds.length - 1}
+                              className="p-1.5 text-gray-500 hover:text-gray-900 disabled:opacity-20 cursor-pointer"
+                              title="Move Later in Slider"
+                            >
+                              <ArrowDown size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveRecommendedProduct(id)}
+                              className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded cursor-pointer ml-1"
+                              title="Remove from Recommended"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={saveHomepageSettings}
+                  disabled={savingSettings}
+                  className="bg-[#800000] text-white px-5 py-2.5 rounded-lg uppercase tracking-widest text-xs font-bold hover:bg-[#600000] transition disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-xs"
+                >
+                  <Check size={14} />
+                  <span>{savingSettings ? "Saving..." : "Save Recommended Products"}</span>
+                </button>
+              </div>
+            </div>
+
             <div className="border-t border-gray-200 pt-6">
               <h3 className="text-sm font-bold uppercase tracking-wider text-gray-700 mb-4">
                 Storefront Images & Banners
@@ -1352,7 +1571,20 @@ export function Admin() {
                           );
                         })()}
                       </td>
-                      <td className="p-4 text-right">
+                      <td className="p-4 text-right whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleRecommendedProductInList(p.id)}
+                          className={`text-[10px] font-bold px-2.5 py-1 rounded-md transition-colors mr-3 cursor-pointer inline-flex items-center gap-1 ${
+                            homepageSettings.recommendedProductIds?.includes(String(p.id))
+                              ? "bg-amber-100 text-amber-800 border border-amber-300 hover:bg-amber-200"
+                              : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-amber-50 hover:text-amber-700"
+                          }`}
+                          title={homepageSettings.recommendedProductIds?.includes(String(p.id)) ? "Remove from homepage Specials slider" : "Feature in homepage Specials slider"}
+                        >
+                          <Star size={12} className={homepageSettings.recommendedProductIds?.includes(String(p.id)) ? "fill-amber-500 text-amber-600" : "text-gray-400"} />
+                          <span>{homepageSettings.recommendedProductIds?.includes(String(p.id)) ? "Recommended" : "Recommend"}</span>
+                        </button>
                         <button 
                           onClick={() => handleEditProduct(p)}
                           className="text-blue-500 hover:text-blue-700 text-xs font-bold uppercase tracking-wider transition-colors mr-4"

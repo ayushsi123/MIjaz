@@ -3,7 +3,7 @@ import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { Link, useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ArrowRight, Package, Wind, Droplet } from "lucide-react";
-import { BLENDS, CATEGORIES } from "../data/products";
+import { CATEGORIES } from "../data/products";
 import { ProductCard } from "../components/ProductCard";
 import { useCart } from "../hooks/useCart";
 import heroBanner from "../imports/hero.png";
@@ -28,7 +28,12 @@ export function Home() {
   const [homepageSettings, setHomepageSettings] = useState<any>(() => {
     try {
       const cached = localStorage.getItem("mijaz_homepage_images");
-      return cached ? JSON.parse(cached) : {};
+      const parsed = cached ? JSON.parse(cached) : {};
+      const cachedRec = localStorage.getItem("mijaz_recommended_products");
+      if (cachedRec) {
+        parsed.recommendedProductIds = JSON.parse(cachedRec);
+      }
+      return parsed;
     } catch {
       return {};
     }
@@ -49,11 +54,19 @@ export function Home() {
           if (data?.url) images[d.id] = data.url;
         });
 
-        // 2. Also read legacy settings/homepage doc if present as fallback
+        // 2. Also read settings/homepage doc for recommended products and fallbacks
         const docRef = doc(db, "settings", "homepage");
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const legacyData = docSnap.data();
+          if (Array.isArray(legacyData.recommendedProductIds)) {
+            images.recommendedProductIds = legacyData.recommendedProductIds;
+            try {
+              localStorage.setItem("mijaz_recommended_products", JSON.stringify(legacyData.recommendedProductIds));
+            } catch (e) {
+              console.warn("Could not cache recommended products:", e);
+            }
+          }
           for (const key of ["heroBanner", "categoryMen", "categoryWomen", "categoryUnisex", "categoryPerfumeRange", "categoryOilRange", "promoBanner"]) {
             if (!images[key] && legacyData[key]) {
               images[key] = legacyData[key];
@@ -171,58 +184,94 @@ export function Home() {
         </div>
       </section>
 
-      {/* ── SIGNATURE BLENDS SLIDER ── */}
-      <section className="py-16 bg-[#0a0a0a]">
-        <div className="max-w-[1440px] mx-auto px-6">
-          <div className="flex items-end justify-between mb-8">
-            <div>
-              <p className="text-[#D4AF37] text-[10px] tracking-[0.35em] uppercase mb-2" style={SANS}>Specials</p>
-              <h2 className="text-3xl text-white font-normal" style={CINZEL}>Recommended</h2>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => scrollSlider(blendsRef, "l")}
-                className="w-9 h-9 border border-white/10 text-white hover:border-[#D4AF37] hover:text-[#D4AF37] transition-colors flex items-center justify-center rounded-full cursor-pointer"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <button
-                onClick={() => scrollSlider(blendsRef, "r")}
-                className="w-9 h-9 border border-white/10 text-white hover:border-[#D4AF37] hover:text-[#D4AF37] transition-colors flex items-center justify-center rounded-full cursor-pointer"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
+      {/* ── SIGNATURE BLENDS / RECOMMENDED SLIDER ── */}
+      {(() => {
+        const recommendedIds: string[] = Array.isArray(homepageSettings.recommendedProductIds)
+          ? homepageSettings.recommendedProductIds.map(String)
+          : [];
 
-          <div
-            ref={blendsRef}
-            className="flex gap-5 overflow-x-auto pb-4 scrollbar-none"
-            style={{ scrollbarWidth: "none" }}
-          >
-            {BLENDS.map((blend) => (
-              <Link
-                key={blend.name}
-                to={`/shop?search=${encodeURIComponent(blend.name)}`}
-                className="flex-shrink-0 w-52 group relative overflow-hidden rounded-xl block"
+        // If admin selected specific IDs, show them in order; otherwise fall back to first real catalog products
+        const recommendedProducts = recommendedIds.length > 0
+          ? recommendedIds
+              .map(id => products.find(p => String(p.id) === String(id)))
+              .filter((p): p is typeof products[0] => Boolean(p))
+          : products.slice(0, 8);
+
+        if (recommendedProducts.length === 0) return null;
+
+        return (
+          <section className="py-16 bg-[#0a0a0a]">
+            <div className="max-w-[1440px] mx-auto px-6">
+              <div className="flex items-end justify-between mb-8">
+                <div>
+                  <p className="text-[#D4AF37] text-[10px] tracking-[0.35em] uppercase mb-2" style={SANS}>Specials</p>
+                  <h2 className="text-3xl text-white font-normal" style={CINZEL}>Recommended</h2>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => scrollSlider(blendsRef, "l")}
+                    className="w-9 h-9 border border-white/10 text-white hover:border-[#D4AF37] hover:text-[#D4AF37] transition-colors flex items-center justify-center rounded-full cursor-pointer"
+                    title="Previous"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button
+                    onClick={() => scrollSlider(blendsRef, "r")}
+                    className="w-9 h-9 border border-white/10 text-white hover:border-[#D4AF37] hover:text-[#D4AF37] transition-colors flex items-center justify-center rounded-full cursor-pointer"
+                    title="Next"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+
+              <div
+                ref={blendsRef}
+                className="flex gap-5 overflow-x-auto pb-4 scrollbar-none"
+                style={{ scrollbarWidth: "none" }}
               >
-                <div className="w-full" style={{ aspectRatio: "9/13" }}>
-                  <img
-                    src={blend.img}
-                    alt={blend.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-600"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 p-5">
-                  <h3 className="text-white text-xl mb-1" style={CINZEL}>{blend.name}</h3>
-                  <p className="text-white/60 text-[10px] uppercase tracking-wide" style={SANS}>{blend.subtitle}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+                {recommendedProducts.map((p) => {
+                  const displayImg = p.img || (Array.isArray(p.images) && p.images[0]) || "";
+                  const subtitle = p.notes && p.notes.length > 0
+                    ? p.notes.slice(0, 3).join(" · ")
+                    : (p.category ? `${p.category} · ${p.gender || 'Luxury'}` : "Extrait De Parfum");
+                  const price = p.salePrices?.["50ml"] || p.salePrices?.["30ml"] || p.prices?.["50ml"] || p.prices?.["30ml"] || (p as any).price;
+
+                  return (
+                    <Link
+                      key={p.id}
+                      to={`/product/${p.id}`}
+                      className="flex-shrink-0 w-52 group relative overflow-hidden rounded-xl block bg-[#141414] border border-white/5 hover:border-[#D4AF37]/50 transition-all duration-300"
+                    >
+                      <div className="w-full" style={{ aspectRatio: "9/13" }}>
+                        {displayImg ? (
+                          <img
+                            src={displayImg}
+                            alt={p.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-600"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-white/30 text-xs">
+                            No Photo
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent" />
+                      </div>
+                      <div className="absolute bottom-0 left-0 right-0 p-5">
+                        <h3 className="text-white text-xl mb-1 truncate drop-shadow-xs" style={CINZEL}>{p.name}</h3>
+                        <p className="text-white/60 text-[10px] uppercase tracking-wide truncate mb-1" style={SANS}>{subtitle}</p>
+                        {price && (
+                          <p className="text-[#D4AF37] text-xs font-semibold" style={SANS}>Rs. {price}</p>
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        );
+      })()}
 
 
 
