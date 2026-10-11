@@ -342,7 +342,7 @@ export function Admin() {
         }
       }
 
-      await setDoc(doc(db, "settings", "homepage"), generalData, { merge: true });
+      await setDoc(doc(db, "settings", "homepage"), generalData);
 
       // 2. Save each image to its own document in homepage_images (each has its own 1MB limit!)
       for (const key of imageKeys) {
