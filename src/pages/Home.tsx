@@ -34,7 +34,8 @@ export function Home() {
     }
   });
 
-  const { products } = useCart();
+  const { products, announcementBarEnabled, announcementBarText } = useCart();
+  const isBannerVisible = announcementBarEnabled && !!announcementBarText?.trim();
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -78,7 +79,7 @@ export function Home() {
   return (
     <div className="bg-white">
       {/* ── HERO ── */}
-      <section className="relative w-full overflow-hidden bg-black" style={{ height: "calc(100vh - 100px)", minHeight: 520 }}>
+      <section className="relative w-full overflow-hidden bg-black" style={{ height: `calc(100vh - ${isBannerVisible ? "100px" : "68px"})`, minHeight: 520 }}>
         <img
           src={homepageSettings.heroBanner || heroBanner}
           alt="Mijaz hero"

@@ -24,8 +24,12 @@ export function Navbar() {
     profile,
     isLoggedIn,
     logout,
-    products
+    products,
+    announcementBarEnabled,
+    announcementBarText
   } = useCart();
+
+  const isBannerVisible = announcementBarEnabled && !!announcementBarText?.trim();
 
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -67,9 +71,11 @@ export function Navbar() {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 bg-white">
       {/* Announcement Bar */}
-      <div className="bg-[#111111] text-white text-center py-2 text-[11px] font-normal tracking-wide" style={SANS}>
-        Free Shipping above 999 INR &nbsp;|&nbsp; FLAT 10% OFF On Orders above 2499 INR (Automatically Applied) &nbsp;|&nbsp; COD Eligible Above 999 INR
-      </div>
+      {isBannerVisible && (
+        <div className="bg-[#111111] text-white text-center py-2 px-4 text-[11px] font-normal tracking-wide transition-all" style={SANS}>
+          {announcementBarText}
+        </div>
+      )}
 
       {/* Main Nav (Flexible Row Layout) */}
       <nav className="border-b border-gray-100 shadow-xs">

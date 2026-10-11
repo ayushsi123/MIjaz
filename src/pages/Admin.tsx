@@ -8,7 +8,8 @@ import { toast } from "sonner";
 import { NOTES } from "../data/products";
 
 import { generateInvoicePDF } from "../lib/pdfGenerator";
-import { Download, X, Pencil, Tag, Percent, Plus, Check, Trash2, Power, Star, UploadCloud } from "lucide-react";
+import { Download, X, Pencil, Tag, Percent, Plus, Check, Trash2, Power, Star, UploadCloud, Megaphone } from "lucide-react";
+import { useCart } from "../hooks/useCart";
 import { Coupon } from "../types";
 import heroBanner from "../imports/hero.png";
 import categoryMen from "../imports/category-men.jpg";
@@ -290,6 +291,8 @@ export function Admin() {
   };
 
   const [homepageSettings, setHomepageSettings] = useState({
+    announcementBarEnabled: true,
+    announcementBarText: "Free Shipping above 999 INR | FLAT 10% OFF On Orders above 2499 INR (Automatically Applied) | COD Eligible Above 999 INR",
     heroBanner: "",
     categoryMen: "",
     categoryWomen: "",
@@ -317,7 +320,12 @@ export function Admin() {
         if (data?.url) combined[d.id] = data.url;
       });
 
-      setHomepageSettings((prev) => ({ ...prev, ...combined }));
+      setHomepageSettings((prev) => ({
+        ...prev,
+        ...combined,
+        announcementBarEnabled: combined.announcementBarEnabled !== undefined ? Boolean(combined.announcementBarEnabled) : prev.announcementBarEnabled,
+        announcementBarText: typeof combined.announcementBarText === "string" ? combined.announcementBarText : prev.announcementBarText
+      }));
     } catch (error) {
       console.error("Error fetching homepage settings", error);
     }
@@ -357,6 +365,10 @@ export function Admin() {
       } catch (e) {
         console.warn("Local storage cache warning:", e);
       }
+
+      // 4. Immediately sync with Zustand useCart store
+      useCart.getState().setAnnouncementBarEnabled(homepageSettings.announcementBarEnabled);
+      useCart.getState().setAnnouncementBarText(homepageSettings.announcementBarText);
 
       toast.success("Homepage settings saved successfully!");
     } catch (error: any) {
@@ -815,6 +827,116 @@ export function Admin() {
           <h2 className="text-xl font-semibold mb-6">Homepage Settings</h2>
           <div className="bg-gray-50 p-6 border border-gray-100 rounded-xl space-y-8">
             
+            {/* Top Announcement Bar Configuration */}
+            <div className="bg-white p-6 border border-gray-200 rounded-xl shadow-xs space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+                <div className="flex items-start gap-3">
+                  <div className="p-2.5 bg-[#800000]/10 text-[#800000] rounded-lg mt-0.5">
+                    <Megaphone size={20} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900">
+                        Top Announcement Bar
+                      </h3>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                        homepageSettings.announcementBarEnabled 
+                          ? "bg-green-100 text-green-700 border border-green-200" 
+                          : "bg-gray-100 text-gray-500 border border-gray-200"
+                      }`}>
+                        {homepageSettings.announcementBarEnabled ? "Visible" : "Hidden"}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Controls the top header strip pinned across the entire storefront.
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Toggle switch */}
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-semibold text-gray-600">
+                    {homepageSettings.announcementBarEnabled ? "Show Banner" : "Hide Banner"}
+                  </span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={homepageSettings.announcementBarEnabled}
+                      onChange={(e) => setHomepageSettings(prev => ({ ...prev, announcementBarEnabled: e.target.checked }))}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#800000]"></div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Live Preview Box */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Live Preview</span>
+                  <span className="text-[10px] text-gray-400">
+                    {homepageSettings.announcementBarEnabled ? "Displays live on all store pages" : "Hidden on all pages"}
+                  </span>
+                </div>
+                {homepageSettings.announcementBarEnabled ? (
+                  <div className="bg-[#111111] text-white text-center py-2 px-4 text-[11px] font-normal tracking-wide rounded-lg shadow-inner font-sans">
+                    {homepageSettings.announcementBarText?.trim() || "Free Shipping above 999 INR | FLAT 10% OFF On Orders above 2499 INR | COD Eligible"}
+                  </div>
+                ) : (
+                  <div className="bg-gray-100 border border-dashed border-gray-300 text-gray-400 text-center py-2 px-4 text-[11px] rounded-lg italic">
+                    Announcement bar is turned OFF and hidden from customers
+                  </div>
+                )}
+              </div>
+
+              {/* Textarea for message */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-700">
+                    Announcement Message
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setHomepageSettings(prev => ({
+                      ...prev,
+                      announcementBarText: "Free Shipping above 999 INR | FLAT 10% OFF On Orders above 2499 INR (Automatically Applied) | COD Eligible Above 999 INR"
+                    }))}
+                    className="text-[11px] text-[#800000] hover:underline font-semibold"
+                  >
+                    Reset to Default Text
+                  </button>
+                </div>
+                <textarea
+                  rows={2}
+                  value={homepageSettings.announcementBarText}
+                  onChange={(e) => setHomepageSettings(prev => ({ ...prev, announcementBarText: e.target.value }))}
+                  placeholder="e.g. Free Shipping above 999 INR | FLAT 10% OFF On Orders above 2499 INR (Automatically Applied) | COD Eligible Above 999 INR"
+                  className="w-full border border-gray-300 rounded-lg p-3 text-xs focus:ring-1 focus:ring-[#800000] focus:border-[#800000] outline-hidden leading-relaxed"
+                />
+                <p className="text-[11px] text-gray-400 mt-1">
+                  Use the vertical pipe <span className="font-mono text-gray-700 font-bold">|</span> separator to separate multiple offers or details.
+                </p>
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={saveHomepageSettings}
+                  disabled={savingSettings}
+                  className="bg-[#800000] text-white px-5 py-2.5 rounded-lg uppercase tracking-widest text-xs font-bold hover:bg-[#600000] transition disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-xs"
+                >
+                  <Check size={14} />
+                  <span>{savingSettings ? "Saving..." : "Save Announcement Bar"}</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200 pt-6">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-gray-700 mb-4">
+                Storefront Images & Banners
+              </h3>
+            </div>
+
             {/* Field helper */}
             {Object.entries({
               heroBanner: { label: "Hero Banner (Top)", defaultImg: heroBanner },

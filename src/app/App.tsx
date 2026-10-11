@@ -40,12 +40,47 @@ export default function App() {
     setTrackModalOpen,
     trackingOrder,
     setTrackingOrder,
-    setProducts
+    setProducts,
+    announcementBarEnabled,
+    announcementBarText,
+    setAnnouncementBarEnabled,
+    setAnnouncementBarText
   } = useCart();
 
+  const isBannerVisible = announcementBarEnabled && !!announcementBarText?.trim();
   const [productsLoaded, setProductsLoaded] = useState(false);
 
   useEffect(() => {
+    // 1. Sync announcement bar settings in real-time from Firestore
+    let unsubSettings: (() => void) | undefined;
+    const syncHomepageSettings = async () => {
+      try {
+        const { doc, onSnapshot } = await import("firebase/firestore");
+        const { db } = await import("../lib/firebase");
+        unsubSettings = onSnapshot(
+          doc(db, "settings", "homepage"),
+          (docSnap) => {
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              if (typeof data.announcementBarEnabled === "boolean") {
+                setAnnouncementBarEnabled(data.announcementBarEnabled);
+              }
+              if (typeof data.announcementBarText === "string") {
+                setAnnouncementBarText(data.announcementBarText);
+              }
+            }
+          },
+          (err) => {
+            console.warn("Could not subscribe to homepage settings:", err);
+          }
+        );
+      } catch (err) {
+        console.warn("Error setting up homepage settings listener:", err);
+      }
+    };
+    syncHomepageSettings();
+
+    // 2. Sync products from Firestore
     const fetchFirebaseProducts = async () => {
       try {
         const { getDocs, collection } = await import("firebase/firestore");
@@ -72,7 +107,11 @@ export default function App() {
       }
     };
     fetchFirebaseProducts();
-  }, []);
+
+    return () => {
+      if (unsubSettings) unsubSettings();
+    };
+  }, [setAnnouncementBarEnabled, setAnnouncementBarText, setProducts]);
 
   const handleCloseTrackModal = () => {
     setTrackingOrder(null);
@@ -86,7 +125,7 @@ export default function App() {
         <Navbar />
         
         {/* Main Content Area */}
-        <main className="pt-[100px] flex-grow">
+        <main className={`${isBannerVisible ? "pt-[100px]" : "pt-[68px]"} flex-grow transition-[padding] duration-200`}>
           {!productsLoaded ? (
             <div className="flex justify-center items-center h-[60vh]">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>

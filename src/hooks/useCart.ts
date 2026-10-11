@@ -69,6 +69,12 @@ interface CartState {
   setTrackModalOpen: (val: boolean) => void;
   trackingOrder: Order | null;
   setTrackingOrder: (order: Order | null) => void;
+
+  // Announcement Bar
+  announcementBarEnabled: boolean;
+  setAnnouncementBarEnabled: (enabled: boolean) => void;
+  announcementBarText: string;
+  setAnnouncementBarText: (text: string) => void;
 }
 
 const DEFAULT_ADDRESSES: Address[] = [
@@ -350,7 +356,12 @@ export const useCart = create<CartState>()(
       trackModalOpen: false,
       setTrackModalOpen: (val) => set({ trackModalOpen: val }),
       trackingOrder: null,
-      setTrackingOrder: (order) => set({ trackingOrder: order, trackModalOpen: order !== null })
+      setTrackingOrder: (order) => set({ trackingOrder: order, trackModalOpen: order !== null }),
+
+      announcementBarEnabled: true,
+      setAnnouncementBarEnabled: (val) => set({ announcementBarEnabled: val }),
+      announcementBarText: "Free Shipping above 999 INR | FLAT 10% OFF On Orders above 2499 INR (Automatically Applied) | COD Eligible Above 999 INR",
+      setAnnouncementBarText: (val) => set({ announcementBarText: val })
     }),
     {
       name: "mijaz-fragrances-storage",
@@ -364,7 +375,9 @@ export const useCart = create<CartState>()(
         giftWrap: state.giftWrap,
         giftMessage: state.giftMessage,
         shipMultiple: state.shipMultiple,
-        recipientCount: state.recipientCount
+        recipientCount: state.recipientCount,
+        announcementBarEnabled: state.announcementBarEnabled,
+        announcementBarText: state.announcementBarText
       })
     }
   )
