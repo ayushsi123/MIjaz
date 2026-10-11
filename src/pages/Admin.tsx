@@ -307,9 +307,16 @@ export function Admin() {
     try {
       const docRef = doc(db, "settings", "homepage");
       const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        setHomepageSettings((prev) => ({ ...prev, ...docSnap.data() }));
-      }
+      let combined: any = docSnap.exists() ? docSnap.data() : {};
+
+      // Load individual image documents
+      const imgSnap = await getDocs(collection(db, "homepage_images"));
+      imgSnap.forEach((d) => {
+        const data = d.data();
+        if (data?.url) combined[d.id] = data.url;
+      });
+
+      setHomepageSettings((prev) => ({ ...prev, ...combined }));
     } catch (error) {
       console.error("Error fetching homepage settings", error);
     }
@@ -318,12 +325,42 @@ export function Admin() {
   const saveHomepageSettings = async () => {
     setSavingSettings(true);
     try {
-      const docRef = doc(db, "settings", "homepage");
-      await setDoc(docRef, homepageSettings, { merge: true });
-      toast.success("Homepage settings saved!");
-    } catch (error) {
+      const imageKeys = [
+        "heroBanner", "categoryMen", "categoryWomen", 
+        "categoryUnisex", "categoryPerfumeRange", "categoryOilRange", "promoBanner"
+      ];
+
+      // 1. Save general settings without large image payloads into settings/homepage (< 2KB)
+      const generalData: any = {};
+      const imagesPayload: any = {};
+
+      for (const [key, value] of Object.entries(homepageSettings)) {
+        if (imageKeys.includes(key)) {
+          imagesPayload[key] = value || "";
+        } else {
+          generalData[key] = value;
+        }
+      }
+
+      await setDoc(doc(db, "settings", "homepage"), generalData, { merge: true });
+
+      // 2. Save each image to its own document in homepage_images (each has its own 1MB limit!)
+      for (const key of imageKeys) {
+        const url = imagesPayload[key];
+        await setDoc(doc(db, "homepage_images", key), { url: url || "" }, { merge: true });
+      }
+
+      // 3. Cache locally to eliminate any flicker on refresh
+      try {
+        localStorage.setItem("mijaz_homepage_images", JSON.stringify(imagesPayload));
+      } catch (e) {
+        console.warn("Local storage cache warning:", e);
+      }
+
+      toast.success("Homepage settings saved successfully!");
+    } catch (error: any) {
       console.error("Error saving homepage settings", error);
-      toast.error("Failed to save settings");
+      toast.error(error?.message || "Failed to save settings");
     } finally {
       setSavingSettings(false);
     }
@@ -341,7 +378,7 @@ export function Admin() {
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement("canvas");
-          const MAX_WIDTH = 1200;
+          const MAX_WIDTH = 900;
           const scaleSize = img.width > MAX_WIDTH ? MAX_WIDTH / img.width : 1;
           canvas.width = Math.round(img.width * scaleSize);
           canvas.height = Math.round(img.height * scaleSize);
@@ -349,8 +386,8 @@ export function Admin() {
           const ctx = canvas.getContext("2d");
           ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-          // Compress to JPEG with 0.78 quality to keep document lean
-          const base64Url = canvas.toDataURL("image/jpeg", 0.78);
+          // Compress to JPEG with 0.70 quality for crisp quality and small size (< 60KB)
+          const base64Url = canvas.toDataURL("image/jpeg", 0.70);
           setHomepageSettings(prev => ({ ...prev, [key]: base64Url }));
           toast.success("Image selected! Click 'Save Settings' below to apply.", { id: "upload" });
         };

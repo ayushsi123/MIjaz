@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { Link, useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ArrowRight, Package, Wind, Droplet } from "lucide-react";
@@ -23,16 +23,50 @@ export function Home() {
   const scrollSlider = (ref: React.RefObject<HTMLDivElement | null>, dir: "l" | "r") => {
     ref.current?.scrollBy({ left: dir === "r" ? 320 : -320, behavior: "smooth" });
   };
-  const [homepageSettings, setHomepageSettings] = useState<any>({});
+
+  // 1. Initialize immediately from localStorage cache so there is ZERO flash of old images on refresh
+  const [homepageSettings, setHomepageSettings] = useState<any>(() => {
+    try {
+      const cached = localStorage.getItem("mijaz_homepage_images");
+      return cached ? JSON.parse(cached) : {};
+    } catch {
+      return {};
+    }
+  });
+
   const { products } = useCart();
 
   useEffect(() => {
     const fetchSettings = async () => {
       try {
+        const images: any = {};
+
+        // 1. Fetch individual image documents from homepage_images (bypasses 1MB doc limits)
+        const imgSnap = await getDocs(collection(db, "homepage_images"));
+        imgSnap.forEach((d) => {
+          const data = d.data();
+          if (data?.url) images[d.id] = data.url;
+        });
+
+        // 2. Also read legacy settings/homepage doc if present as fallback
         const docRef = doc(db, "settings", "homepage");
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-          setHomepageSettings(docSnap.data());
+          const legacyData = docSnap.data();
+          for (const key of ["heroBanner", "categoryMen", "categoryWomen", "categoryUnisex", "categoryPerfumeRange", "categoryOilRange", "promoBanner"]) {
+            if (!images[key] && legacyData[key]) {
+              images[key] = legacyData[key];
+            }
+          }
+        }
+
+        if (Object.keys(images).length > 0) {
+          setHomepageSettings((prev: any) => ({ ...prev, ...images }));
+          try {
+            localStorage.setItem("mijaz_homepage_images", JSON.stringify(images));
+          } catch (e) {
+            console.warn("Could not cache images to localStorage:", e);
+          }
         }
       } catch (error) {
         console.error("Error fetching homepage settings", error);
