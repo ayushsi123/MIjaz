@@ -473,7 +473,9 @@ export function Profile() {
                                     price: i.price,
                                     amount: i.price * i.qty
                                   })),
-                                  subtotal: order.total,
+                                  subtotal: order.subtotal || order.total,
+                                  discount: order.discount || 0,
+                                  couponCode: order.couponCode || "",
                                   tax: 0,
                                   total: order.total,
                                   paymentDetails: order.paymentMethod === 'COD' ? "Cash on Delivery" : `Paid via ${order.paymentMethod}`,

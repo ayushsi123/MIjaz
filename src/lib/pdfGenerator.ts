@@ -1,5 +1,36 @@
 import { jsPDF } from "jspdf";
-import type { InvoiceData } from "./yourInvoiceTypes";
+export interface InvoiceItem {
+  name: string;
+  desc?: string;
+  qty: number;
+  price: number;
+  amount: number;
+}
+
+export interface InvoiceData {
+  invoiceNo?: string;
+  orderId?: string;
+  date?: string;
+  dueDate?: string;
+  customerName?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  state?: string;
+  pincode?: string;
+  items?: InvoiceItem[];
+  subtotal?: number;
+  discount?: number;
+  couponCode?: string;
+  tax?: number;
+  total?: number;
+  paymentDetails?: string;
+  message?: string;
+  jobDesc?: string;
+  termsOfDelivery?: string;
+  transportMode?: string;
+  vehicleNo?: string;
+}
 
 type ExtendedInvoiceData = InvoiceData & {
   taxRate?: number;
@@ -41,11 +72,19 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
   const round2 = (n: number) =>
     Math.round((n + Number.EPSILON) * 100) / 100;
 
-  const money = (n: number) =>
-    Number(n || 0).toLocaleString("en-IN", {
+  const money = (n: number) => {
+    const val = Number(n || 0);
+    if (val < 0) {
+      return `(-) ${Math.abs(val).toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+    }
+    return val.toLocaleString("en-IN", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
+  };
 
   const date = new Date().toLocaleDateString("en-GB");
 
@@ -174,11 +213,12 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
   // customer's final payable amount.
   // --------------------------------------------------
 
-  const grossItems = data.items.map((item) => {
+  const rawItems = (data.items || []) as any[];
+  const grossItems = rawItems.map((item) => {
     const grossAmount = round2(
       Number(
         item.amount ??
-          Number(item.quantity || item.qty) * Number(item.price)
+          Number(item.quantity || item.qty || 1) * Number(item.price || 0)
       )
     );
 
@@ -206,15 +246,14 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
     )
   );
 
+  const discountVal = round2(Number(data.discount || 0));
+
   const grossTotal = round2(
-    Number(data.total ?? calculatedGrossTotal)
+    Number(data.total ?? Math.max(0, calculatedGrossTotal - discountVal))
   );
 
   const taxableTotal = round2(
-    grossItems.reduce(
-      (sum, item) => sum + item.taxableAmount,
-      0
-    )
+    grossTotal / (1 + taxRate / 100)
   );
 
   // Total tax is calculated only once.
@@ -229,7 +268,7 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
 
   const rounding = Number(invoice.rounding ?? 0);
 
-  const totalQty = data.items.reduce(
+  const totalQty = rawItems.reduce(
     (sum, item) => sum + Number(item.quantity || item.qty || 0),
     0
   );
@@ -498,12 +537,20 @@ box(X, consigneeY, leftW, partyH);
 
   // IGST is 18%. CGST and SGST show the equivalent
   // 9% + 9% split. These are NOT added together.
-  const taxRows: [string, number][] = [
+  const discountLabel = data.couponCode
+    ? `Trade Discount (${data.couponCode})`
+    : "Trade Discount";
+
+  const taxRows: [string, number][] = [];
+  if (discountVal > 0) {
+    taxRows.push([discountLabel, -discountVal]);
+  }
+  taxRows.push(
     [`IGST@ ${taxRate}%`, igst],
     [`CGST@ ${halfTaxRate}%`, cgst],
     [`SGST@ ${halfTaxRate}%`, sgst],
-    ["Rounding Off Difference", rounding],
-  ];
+    ["Rounding Off Difference", rounding]
+  );
 
   taxRows.forEach(([label, amount], i) => {
     const y = taxY + i * taxRowH;

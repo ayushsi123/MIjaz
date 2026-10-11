@@ -1,6 +1,20 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { CartItem, Product, Address, Order, UserProfile } from "../types";
+import { CartItem, Product, Address, Order, UserProfile, Coupon } from "../types";
+
+export function calculateCouponDiscount(coupon: Coupon | null | undefined, total: number): number {
+  if (!coupon || !coupon.isActive) return 0;
+  if (coupon.minOrder && total < coupon.minOrder) return 0;
+  if (coupon.type === "percentage") {
+    let disc = Math.round((total * coupon.value) / 100);
+    if (coupon.maxDiscount && disc > coupon.maxDiscount) {
+      disc = coupon.maxDiscount;
+    }
+    return Math.min(total, disc);
+  } else {
+    return Math.min(total, Math.round(coupon.value));
+  }
+}
 
 interface CartState {
   products: Product[];
@@ -20,6 +34,12 @@ interface CartState {
   login: (name: string, email: string, phone: string) => void;
   logout: () => void;
   
+  // Coupon state
+  appliedCoupon: Coupon | null;
+  discountAmount: number;
+  applyCoupon: (coupon: Coupon) => { success: boolean; message: string; discount: number };
+  removeCoupon: () => void;
+
   // Gifting state
   giftWrap: boolean;
   setGiftWrap: (wrap: boolean) => void;
@@ -141,6 +161,37 @@ export const useCart = create<CartState>()(
       cartDrawerOpen: false,
       setCartDrawerOpen: (open) => set({ cartDrawerOpen: open }),
       
+      // Coupon state
+      appliedCoupon: null,
+      discountAmount: 0,
+      applyCoupon: (coupon) => {
+        const state = (useCart as any).getState();
+        const currentTotal = state.cartTotal || 0;
+        if (!coupon.isActive) {
+          return { success: false, message: "This coupon is no longer active.", discount: 0 };
+        }
+        if (coupon.minOrder && currentTotal < coupon.minOrder) {
+          return { 
+            success: false, 
+            message: `Minimum order amount of Rs. ${coupon.minOrder.toLocaleString()} required for this coupon.`, 
+            discount: 0 
+          };
+        }
+        const disc = calculateCouponDiscount(coupon, currentTotal);
+        if (disc <= 0) {
+          return { success: false, message: "Coupon cannot be applied to this cart.", discount: 0 };
+        }
+        set({ appliedCoupon: coupon, discountAmount: disc });
+        return { 
+          success: true, 
+          message: coupon.type === "percentage" 
+            ? `${coupon.value}% discount applied (-Rs. ${disc.toLocaleString()})!` 
+            : `Rs. ${disc.toLocaleString()} flat discount applied!`, 
+          discount: disc 
+        };
+      },
+      removeCoupon: () => set({ appliedCoupon: null, discountAmount: 0 }),
+
       addToCart: (product, size, qty = 1, gifting) => set((state) => {
         const resolvedQty = typeof qty === "number" ? qty : 1;
         const resolvedGifting = typeof qty === "object" ? (qty as any) : gifting;
@@ -178,7 +229,8 @@ export const useCart = create<CartState>()(
           ];
         }
         const newTotal = newCart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-        return { cart: newCart, cartTotal: newTotal, cartDrawerOpen: true };
+        const newDiscount = calculateCouponDiscount(state.appliedCoupon, newTotal);
+        return { cart: newCart, cartTotal: newTotal, discountAmount: newDiscount, cartDrawerOpen: true };
       }),
       
       updateQty: (productId, size, delta) => set((state) => {
@@ -193,7 +245,8 @@ export const useCart = create<CartState>()(
           )
           .filter((item) => item.qty > 0);
         const newTotal = newCart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-        return { cart: newCart, cartTotal: newTotal };
+        const newDiscount = calculateCouponDiscount(state.appliedCoupon, newTotal);
+        return { cart: newCart, cartTotal: newTotal, discountAmount: newDiscount };
       }),
       
       removeFromCart: (productId, size) => set((state) => {
@@ -202,10 +255,20 @@ export const useCart = create<CartState>()(
         );
         const newCart = cleanCart.filter((item) => !(item.productId === productId && item.size === size));
         const newTotal = newCart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-        return { cart: newCart, cartTotal: newTotal };
+        const newDiscount = calculateCouponDiscount(state.appliedCoupon, newTotal);
+        return { cart: newCart, cartTotal: newTotal, discountAmount: newDiscount };
       }),
       
-      clearCart: () => set({ cart: [], cartTotal: 0, giftWrap: false, giftMessage: "", shipMultiple: false, recipientCount: 1 }),
+      clearCart: () => set({ 
+        cart: [], 
+        cartTotal: 0, 
+        appliedCoupon: null, 
+        discountAmount: 0, 
+        giftWrap: false, 
+        giftMessage: "", 
+        shipMultiple: false, 
+        recipientCount: 1 
+      }),
       
       // Auth Initializers & Actions
       isLoggedIn: true,
@@ -294,6 +357,8 @@ export const useCart = create<CartState>()(
       partialize: (state) => ({
         cart: state.cart,
         cartTotal: state.cartTotal,
+        appliedCoupon: state.appliedCoupon,
+        discountAmount: state.discountAmount,
         isLoggedIn: state.isLoggedIn,
         profile: state.profile,
         giftWrap: state.giftWrap,

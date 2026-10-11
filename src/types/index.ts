@@ -60,11 +60,26 @@ export interface Order {
     qty: number;
   }[];
   total: number;
+  subtotal?: number;
+  discount?: number;
+  couponCode?: string;
   address: string;
   trackingNumber?: string;
   carrier?: string;
   estimatedDelivery?: string;
   updates?: OrderUpdate[];
+}
+
+export interface Coupon {
+  id?: string;
+  code: string;
+  type: "percentage" | "fixed";
+  value: number;
+  minOrder?: number;
+  maxDiscount?: number;
+  isActive: boolean;
+  description?: string;
+  createdAt?: string;
 }
 
 export interface UserProfile {

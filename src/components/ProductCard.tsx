@@ -68,6 +68,14 @@ export function ProductCard({ product }: ProductCardProps) {
   const count = reviews.length;
   const avgRating = count > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / count : 0;
 
+  // Check if product actually has a discount on any size
+  const isOnSale = product.sizes?.some(
+    (size) =>
+      product.prices?.[size] &&
+      product.salePrices?.[size] &&
+      product.salePrices[size] < product.prices[size]
+  );
+
   return (
     <div className="group flex flex-col bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow duration-300" style={SANS}>
       {/* Image Area (portrait ratio 3:4) */}
@@ -78,12 +86,14 @@ export function ProductCard({ product }: ProductCardProps) {
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
         />
 
-        {/* Sale Badge */}
-        <div className="absolute top-3 left-0">
-          <span className="bg-[#D4AF37] text-black text-[8px] font-bold px-2.5 py-1 tracking-widest uppercase rounded-r-md" style={SANS}>
-            Sale
-          </span>
-        </div>
+        {/* Sale Badge - only show if product is actually discounted */}
+        {isOnSale && (
+          <div className="absolute top-3 left-0">
+            <span className="bg-[#D4AF37] text-black text-[8px] font-bold px-2.5 py-1 tracking-widest uppercase rounded-r-md" style={SANS}>
+              Sale
+            </span>
+          </div>
+        )}
 
         {/* Badges (gender, occasion) */}
         <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">

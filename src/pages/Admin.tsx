@@ -8,7 +8,8 @@ import { toast } from "sonner";
 import { NOTES } from "../data/products";
 
 import { generateInvoicePDF } from "../lib/pdfGenerator";
-import { Download, X, Pencil } from "lucide-react";
+import { Download, X, Pencil, Tag, Percent, Plus, Check, Trash2, Power } from "lucide-react";
+import { Coupon } from "../types";
 import heroBanner from "../imports/hero.png";
 import categoryMen from "../imports/category-men.jpg";
 import categoryWomen from "../imports/category-women.jpg";
@@ -22,16 +23,30 @@ export function Admin() {
   const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [combos, setCombos] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'invoices' | 'combos' | 'homepage' | 'settings'>('products');
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'invoices' | 'combos' | 'coupons' | 'homepage' | 'settings'>('products');
   
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [editingComboId, setEditingComboId] = useState<string | null>(null);
+
+  // Coupon State
+  const [couponCode, setCouponCode] = useState("");
+  const [couponType, setCouponType] = useState<"percentage" | "fixed">("percentage");
+  const [couponValue, setCouponValue] = useState("");
+  const [couponMinOrder, setCouponMinOrder] = useState("");
+  const [couponMaxDiscount, setCouponMaxDiscount] = useState("");
+  const [couponDescription, setCouponDescription] = useState("");
+  const [couponIsActive, setCouponIsActive] = useState(true);
+  const [editingCouponId, setEditingCouponId] = useState<string | null>(null);
+  const [savingCoupon, setSavingCoupon] = useState(false);
 
   // New Product State
   const [name, setName] = useState("");
   const [sizeOption, setSizeOption] = useState<"30ml" | "50ml" | "Both">("50ml");
   const [price30ml, setPrice30ml] = useState("");
+  const [mrp30ml, setMrp30ml] = useState("");
   const [price50ml, setPrice50ml] = useState("");
+  const [mrp50ml, setMrp50ml] = useState("");
   const [stock30ml, setStock30ml] = useState("");
   const [stock50ml, setStock50ml] = useState("");
   const [description, setDescription] = useState("");
@@ -73,6 +88,7 @@ export function Admin() {
         fetchProducts();
         fetchOrders();
         fetchCombos();
+        fetchCoupons();
         fetchHomepageSettings();
       }
       setLoading(false);
@@ -108,6 +124,167 @@ export function Admin() {
       setCombos(items);
     } catch (error) {
       console.error("Error fetching combos", error);
+    }
+  };
+
+  const fetchCoupons = async () => {
+    try {
+      const q = query(collection(db, "coupons"), orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(q);
+      const items = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Coupon[];
+      setCoupons(items);
+    } catch (error) {
+      console.error("Error fetching coupons", error);
+      try {
+        const querySnapshot = await getDocs(collection(db, "coupons"));
+        const items = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Coupon[];
+        setCoupons(items);
+      } catch (err) {
+        console.error("Error fetching coupons fallback", err);
+      }
+    }
+  };
+
+  const handleSaveCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanCode = couponCode.trim().toUpperCase();
+    if (!cleanCode) {
+      toast.error("Please enter a coupon code");
+      return;
+    }
+    const val = Number(couponValue);
+    if (isNaN(val) || val <= 0) {
+      toast.error("Please enter a valid discount amount");
+      return;
+    }
+    if (couponType === "percentage" && val > 100) {
+      toast.error("Percentage discount cannot exceed 100%");
+      return;
+    }
+
+    setSavingCoupon(true);
+    try {
+      const payload: Partial<Coupon> = {
+        code: cleanCode,
+        type: couponType,
+        value: val,
+        minOrder: couponMinOrder ? Number(couponMinOrder) : 0,
+        maxDiscount: couponMaxDiscount ? Number(couponMaxDiscount) : 0,
+        description: couponDescription.trim(),
+        isActive: couponIsActive,
+      };
+
+      if (editingCouponId) {
+        await updateDoc(doc(db, "coupons", editingCouponId), payload);
+        toast.success(`Coupon ${cleanCode} updated successfully`);
+      } else {
+        await addDoc(collection(db, "coupons"), {
+          ...payload,
+          createdAt: new Date().toISOString()
+        });
+        toast.success(`Coupon ${cleanCode} created successfully`);
+      }
+
+      // Reset form
+      setCouponCode("");
+      setCouponType("percentage");
+      setCouponValue("");
+      setCouponMinOrder("");
+      setCouponMaxDiscount("");
+      setCouponDescription("");
+      setCouponIsActive(true);
+      setEditingCouponId(null);
+      fetchCoupons();
+    } catch (error) {
+      console.error("Error saving coupon", error);
+      toast.error("Failed to save coupon");
+    } finally {
+      setSavingCoupon(false);
+    }
+  };
+
+  const handleEditCoupon = (c: Coupon) => {
+    setEditingCouponId(c.id || null);
+    setCouponCode(c.code);
+    setCouponType(c.type);
+    setCouponValue(String(c.value));
+    setCouponMinOrder(c.minOrder ? String(c.minOrder) : "");
+    setCouponMaxDiscount(c.maxDiscount ? String(c.maxDiscount) : "");
+    setCouponDescription(c.description || "");
+    setCouponIsActive(c.isActive ?? true);
+    // Scroll to form smoothly
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleCancelCouponEdit = () => {
+    setEditingCouponId(null);
+    setCouponCode("");
+    setCouponType("percentage");
+    setCouponValue("");
+    setCouponMinOrder("");
+    setCouponMaxDiscount("");
+    setCouponDescription("");
+    setCouponIsActive(true);
+  };
+
+  const handleToggleCoupon = async (c: Coupon) => {
+    if (!c.id) return;
+    try {
+      const newStatus = !c.isActive;
+      await updateDoc(doc(db, "coupons", c.id), { isActive: newStatus });
+      toast.success(`Coupon ${c.code} is now ${newStatus ? 'Active' : 'Inactive'}`);
+      fetchCoupons();
+    } catch (error) {
+      console.error("Error toggling coupon status", error);
+      toast.error("Failed to update coupon status");
+    }
+  };
+
+  const handleDeleteCoupon = async (couponId: string, code: string) => {
+    if (!window.confirm(`Are you sure you want to delete coupon ${code}?`)) return;
+    try {
+      await deleteDoc(doc(db, "coupons", couponId));
+      toast.success(`Coupon ${code} deleted`);
+      fetchCoupons();
+    } catch (error) {
+      console.error("Error deleting coupon", error);
+      toast.error("Failed to delete coupon");
+    }
+  };
+
+  const handleSeedCoupons = async () => {
+    try {
+      const starterCoupons = [
+        {
+          code: "WELCOME10",
+          type: "percentage" as const,
+          value: 10,
+          minOrder: 1000,
+          maxDiscount: 1000,
+          description: "10% off on luxury fragrances (Min. Rs. 1,000, Max Rs. 1,000)",
+          isActive: true,
+          createdAt: new Date().toISOString()
+        },
+        {
+          code: "FLAT500",
+          type: "fixed" as const,
+          value: 500,
+          minOrder: 2500,
+          maxDiscount: 0,
+          description: "Flat Rs. 500 off on orders above Rs. 2,500",
+          isActive: true,
+          createdAt: new Date().toISOString()
+        }
+      ];
+
+      for (const sc of starterCoupons) {
+        await addDoc(collection(db, "coupons"), sc);
+      }
+      toast.success("Starter coupons seeded!");
+      fetchCoupons();
+    } catch (error) {
+      console.error("Error seeding coupons", error);
+      toast.error("Failed to seed coupons");
     }
   };
 
@@ -267,14 +444,18 @@ export function Admin() {
 
       if (sizeOption === "30ml" || sizeOption === "Both") {
         finalSizes.push("30ml");
-        finalPrices["30ml"] = Number(price30ml);
-        finalSalePrices["30ml"] = Number(price30ml);
+        const sell30 = Number(price30ml);
+        const mrp30 = mrp30ml ? Number(mrp30ml) : sell30;
+        finalPrices["30ml"] = mrp30 > sell30 ? mrp30 : sell30;
+        finalSalePrices["30ml"] = sell30;
         finalStock["30ml"] = Number(stock30ml);
       }
       if (sizeOption === "50ml" || sizeOption === "Both") {
         finalSizes.push("50ml");
-        finalPrices["50ml"] = Number(price50ml);
-        finalSalePrices["50ml"] = Number(price50ml);
+        const sell50 = Number(price50ml);
+        const mrp50 = mrp50ml ? Number(mrp50ml) : sell50;
+        finalPrices["50ml"] = mrp50 > sell50 ? mrp50 : sell50;
+        finalSalePrices["50ml"] = sell50;
         finalStock["50ml"] = Number(stock50ml);
       }
 
@@ -306,7 +487,9 @@ export function Admin() {
       
       setName("");
       setPrice30ml("");
+      setMrp30ml("");
       setPrice50ml("");
+      setMrp50ml("");
       setStock30ml("");
       setStock50ml("");
       setSizeOption("50ml");
@@ -327,20 +510,36 @@ export function Admin() {
     setName(p.name);
     if (p.sizes?.includes("30ml") && p.sizes?.includes("50ml")) {
       setSizeOption("Both");
-      setPrice30ml(p.prices?.["30ml"] || p.price || "");
-      setPrice50ml(p.prices?.["50ml"] || p.price || "");
+      const sell30 = p.salePrices?.["30ml"] || p.price || "";
+      const orig30 = p.prices?.["30ml"] || "";
+      setPrice30ml(sell30 ? String(sell30) : "");
+      setMrp30ml(orig30 && sell30 && Number(orig30) > Number(sell30) ? String(orig30) : "");
+
+      const sell50 = p.salePrices?.["50ml"] || p.price || "";
+      const orig50 = p.prices?.["50ml"] || "";
+      setPrice50ml(sell50 ? String(sell50) : "");
+      setMrp50ml(orig50 && sell50 && Number(orig50) > Number(sell50) ? String(orig50) : "");
+
       setStock30ml(p.stock?.["30ml"] ?? "");
       setStock50ml(p.stock?.["50ml"] ?? "");
     } else if (p.sizes?.includes("30ml")) {
       setSizeOption("30ml");
-      setPrice30ml(p.prices?.["30ml"] || p.price || "");
+      const sell30 = p.salePrices?.["30ml"] || p.price || "";
+      const orig30 = p.prices?.["30ml"] || "";
+      setPrice30ml(sell30 ? String(sell30) : "");
+      setMrp30ml(orig30 && sell30 && Number(orig30) > Number(sell30) ? String(orig30) : "");
       setPrice50ml("");
+      setMrp50ml("");
       setStock30ml(p.stock?.["30ml"] ?? "");
       setStock50ml("");
     } else {
       setSizeOption("50ml");
       setPrice30ml("");
-      setPrice50ml(p.prices?.["50ml"] || p.price || "");
+      setMrp30ml("");
+      const sell50 = p.salePrices?.["50ml"] || p.price || "";
+      const orig50 = p.prices?.["50ml"] || "";
+      setPrice50ml(sell50 ? String(sell50) : "");
+      setMrp50ml(orig50 && sell50 && Number(orig50) > Number(sell50) ? String(orig50) : "");
       setStock30ml("");
       setStock50ml(p.stock?.["50ml"] ?? "");
     }
@@ -474,6 +673,17 @@ export function Admin() {
           Combos
         </button>
         <button 
+          onClick={() => setActiveTab('coupons')}
+          className={`pb-3 px-2 uppercase tracking-widest text-xs font-bold flex items-center gap-1.5 ${activeTab === 'coupons' ? 'border-b-2 border-[#800000] text-[#800000]' : 'text-gray-400 hover:text-gray-800'}`}
+        >
+          <span>Coupons</span>
+          {coupons.length > 0 && (
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${activeTab === 'coupons' ? 'bg-[#800000] text-white' : 'bg-gray-100 text-gray-600'}`}>
+              {coupons.length}
+            </span>
+          )}
+        </button>
+        <button 
           onClick={() => setActiveTab('homepage')}
           className={`pb-3 px-2 uppercase tracking-widest text-xs font-bold ${activeTab === 'homepage' ? 'border-b-2 border-[#800000] text-[#800000]' : 'text-gray-400 hover:text-gray-800'}`}
         >
@@ -483,7 +693,7 @@ export function Admin() {
           onClick={() => setActiveTab('settings')}
           className={`pb-3 px-2 uppercase tracking-widest text-xs font-bold ${activeTab === 'settings' ? 'border-b-2 border-[#800000] text-[#800000]' : 'text-gray-400 hover:text-gray-800'}`}
         >
-          Settings
+          Settings / Scent Notes
         </button>
       </div>
 
@@ -627,27 +837,85 @@ export function Admin() {
               </div>
               
               {(sizeOption === "30ml" || sizeOption === "Both") && (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-gray-50 border border-gray-200 rounded">
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Price for 30ml (Rs)</label>
-                    <input type="number" value={price30ml} onChange={e => setPrice30ml(e.target.value)} className="w-full border p-2" required />
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
+                      Selling Price 30ml (₹)*
+                    </label>
+                    <input 
+                      type="number" 
+                      value={price30ml} 
+                      onChange={e => setPrice30ml(e.target.value)} 
+                      className="w-full border p-2 rounded bg-white text-xs font-medium focus:border-[#800000]" 
+                      placeholder="e.g. 500"
+                      required 
+                    />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Stock for 30ml</label>
-                    <input type="number" value={stock30ml} onChange={e => setStock30ml(e.target.value)} className="w-full border p-2" required />
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
+                      Original / MRP (₹) <span className="text-[10px] text-gray-400 font-normal lowercase">(optional)</span>
+                    </label>
+                    <input 
+                      type="number" 
+                      value={mrp30ml} 
+                      onChange={e => setMrp30ml(e.target.value)} 
+                      className="w-full border p-2 rounded bg-white text-xs placeholder:text-gray-400 focus:border-[#800000]" 
+                      placeholder="e.g. 700 (triggers SALE)" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
+                      Stock 30ml*
+                    </label>
+                    <input 
+                      type="number" 
+                      value={stock30ml} 
+                      onChange={e => setStock30ml(e.target.value)} 
+                      className="w-full border p-2 rounded bg-white text-xs font-medium focus:border-[#800000]" 
+                      required 
+                    />
                   </div>
                 </div>
               )}
               
               {(sizeOption === "50ml" || sizeOption === "Both") && (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-gray-50 border border-gray-200 rounded">
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Price for 50ml (Rs)</label>
-                    <input type="number" value={price50ml} onChange={e => setPrice50ml(e.target.value)} className="w-full border p-2" required />
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
+                      Selling Price 50ml (₹)*
+                    </label>
+                    <input 
+                      type="number" 
+                      value={price50ml} 
+                      onChange={e => setPrice50ml(e.target.value)} 
+                      className="w-full border p-2 rounded bg-white text-xs font-medium focus:border-[#800000]" 
+                      placeholder="e.g. 600"
+                      required 
+                    />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Stock for 50ml</label>
-                    <input type="number" value={stock50ml} onChange={e => setStock50ml(e.target.value)} className="w-full border p-2" required />
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
+                      Original / MRP (₹) <span className="text-[10px] text-gray-400 font-normal lowercase">(optional)</span>
+                    </label>
+                    <input 
+                      type="number" 
+                      value={mrp50ml} 
+                      onChange={e => setMrp50ml(e.target.value)} 
+                      className="w-full border p-2 rounded bg-white text-xs placeholder:text-gray-400 focus:border-[#800000]" 
+                      placeholder="e.g. 800 (triggers SALE)" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
+                      Stock 50ml*
+                    </label>
+                    <input 
+                      type="number" 
+                      value={stock50ml} 
+                      onChange={e => setStock50ml(e.target.value)} 
+                      className="w-full border p-2 rounded bg-white text-xs font-medium focus:border-[#800000]" 
+                      required 
+                    />
                   </div>
                 </div>
               )}
@@ -729,7 +997,9 @@ export function Admin() {
                     setEditingProductId(null);
                     setName("");
                     setPrice30ml("");
+                    setMrp30ml("");
                     setPrice50ml("");
+                    setMrp50ml("");
                     setSizeOption("50ml");
                     setDescription("");
                     setNarrative("");
@@ -768,7 +1038,26 @@ export function Admin() {
                         {p.img && <img src={p.img} alt={p.name} className="w-8 h-10 object-cover rounded" />}
                         {p.name}
                       </td>
-                      <td className="p-4">Rs. {p.prices?.["50ml"] || p.price}</td>
+                      <td className="p-4">
+                        {(() => {
+                          const sell = p.salePrices?.["50ml"] || p.salePrices?.["30ml"] || p.price;
+                          const orig = p.prices?.["50ml"] || p.prices?.["30ml"];
+                          const isDiscounted = orig && sell && Number(orig) > Number(sell);
+                          return (
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-gray-900">Rs. {sell}</span>
+                              {isDiscounted && (
+                                <>
+                                  <span className="text-xs text-gray-400 line-through">Rs. {orig}</span>
+                                  <span className="bg-[#D4AF37] text-black text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                    SALE
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </td>
                       <td className="p-4 text-right">
                         <button 
                           onClick={() => handleEditProduct(p)}
@@ -1215,14 +1504,16 @@ export function Admin() {
                               address: order.shippingAddress?.address || "Store Purchase",
                               state: order.shippingAddress?.state === "Store" ? "Delhi" : (order.shippingAddress?.state || "Delhi"),
                               pincode: order.shippingAddress?.pincode === "000000" ? "" : (order.shippingAddress?.pincode || ""),
-                              items: order.cart?.map((c: any) => ({
+                              items: (order.cart || order.items)?.map((c: any) => ({
                                 name: c.name,
                                 desc: c.size,
-                                qty: c.quantity,
+                                qty: c.quantity || c.qty || 1,
                                 price: c.price,
-                                amount: c.price * c.quantity
+                                amount: c.amount || (c.price * (c.quantity || c.qty || 1))
                               })) || [],
-                              subtotal: order.total || 0,
+                              subtotal: order.subtotal || order.total || 0,
+                              discount: order.discount || 0,
+                              couponCode: order.couponCode || "",
                               tax: 0,
                               total: order.total || 0,
                               paymentDetails: `${order.paymentMethod || "Cash"} - Paid in full`,
@@ -1460,6 +1751,308 @@ export function Admin() {
               </div>
             </div>
           )}
+        </div>
+      ) : activeTab === 'coupons' ? (
+        <div className="space-y-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b">
+            <div>
+              <h2 className="text-xl font-semibold" style={{ fontFamily: "'Playfair Display', serif" }}>
+                Coupon & Discount Management
+              </h2>
+              <p className="text-xs text-gray-500 mt-1">
+                Create percentage or fixed flat amount coupons to apply on checkout cart.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              {coupons.length === 0 && (
+                <button
+                  onClick={handleSeedCoupons}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded text-xs font-bold uppercase tracking-wider transition-colors"
+                >
+                  + Seed Starter Coupons
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Left: Create / Edit Form */}
+            <div className="lg:col-span-5 bg-gray-50 p-6 border border-gray-100 rounded-xl h-fit">
+              <div className="flex justify-between items-center mb-5 pb-3 border-b">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-gray-700 flex items-center gap-2">
+                  <Tag size={16} className="text-[#800000]" />
+                  {editingCouponId ? "Edit Coupon" : "Create New Coupon"}
+                </h3>
+                {editingCouponId && (
+                  <button
+                    onClick={handleCancelCouponEdit}
+                    className="text-xs text-gray-500 hover:text-black underline"
+                  >
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
+
+              <form onSubmit={handleSaveCoupon} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1">
+                    Coupon Code *
+                  </label>
+                  <input
+                    type="text"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    placeholder="e.g. FESTIVE20, FLAT500"
+                    className="w-full border p-2.5 rounded bg-white font-mono uppercase tracking-wider text-sm focus:outline-none focus:border-[#800000]"
+                    required
+                  />
+                  <p className="text-[10px] text-gray-400 mt-1">Customers enter this code at checkout.</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1">
+                    Discount Type *
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCouponType("percentage")}
+                      className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded border flex items-center justify-center gap-1.5 transition-all ${
+                        couponType === "percentage"
+                          ? "bg-[#800000] text-white border-[#800000] shadow-xs"
+                          : "bg-white text-gray-700 border-gray-200 hover:bg-gray-100"
+                      }`}
+                    >
+                      <Percent size={14} /> Percentage (%)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCouponType("fixed")}
+                      className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded border flex items-center justify-center gap-1.5 transition-all ${
+                        couponType === "fixed"
+                          ? "bg-[#800000] text-white border-[#800000] shadow-xs"
+                          : "bg-white text-gray-700 border-gray-200 hover:bg-gray-100"
+                      }`}
+                    >
+                      <span>₹ Flat Price</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1">
+                    {couponType === "percentage" ? "Discount Percentage (%) *" : "Flat Discount Amount (₹) *"}
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-gray-400 text-sm font-bold">
+                      {couponType === "percentage" ? "%" : "₹"}
+                    </span>
+                    <input
+                      type="number"
+                      value={couponValue}
+                      onChange={(e) => setCouponValue(e.target.value)}
+                      placeholder={couponType === "percentage" ? "e.g. 15" : "e.g. 500"}
+                      min="1"
+                      max={couponType === "percentage" ? "100" : undefined}
+                      className="w-full border p-2.5 pl-8 rounded bg-white text-sm focus:outline-none focus:border-[#800000]"
+                      required
+                    />
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    {couponType === "percentage"
+                      ? "Percentage deducted from order subtotal (max 100%)."
+                      : "Fixed rupee amount deducted directly from cart total."}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1">
+                      Min Order Value
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-gray-400 text-xs">₹</span>
+                      <input
+                        type="number"
+                        value={couponMinOrder}
+                        onChange={(e) => setCouponMinOrder(e.target.value)}
+                        placeholder="0 (Optional)"
+                        min="0"
+                        className="w-full border p-2 pl-7 rounded bg-white text-xs focus:outline-none focus:border-[#800000]"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1">
+                      Max Discount Cap
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-gray-400 text-xs">₹</span>
+                      <input
+                        type="number"
+                        value={couponMaxDiscount}
+                        onChange={(e) => setCouponMaxDiscount(e.target.value)}
+                        placeholder="No limit"
+                        min="0"
+                        disabled={couponType === "fixed"}
+                        className={`w-full border p-2 pl-7 rounded bg-white text-xs focus:outline-none focus:border-[#800000] ${
+                          couponType === "fixed" ? "opacity-50 cursor-not-allowed bg-gray-100" : ""
+                        }`}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1">
+                    Description / Banner Note
+                  </label>
+                  <input
+                    type="text"
+                    value={couponDescription}
+                    onChange={(e) => setCouponDescription(e.target.value)}
+                    placeholder="e.g. 10% off for new fragrance lovers"
+                    className="w-full border p-2.5 rounded bg-white text-xs focus:outline-none focus:border-[#800000]"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="couponIsActive"
+                    checked={couponIsActive}
+                    onChange={(e) => setCouponIsActive(e.target.checked)}
+                    className="rounded text-[#800000] focus:ring-[#800000] h-4 w-4"
+                  />
+                  <label htmlFor="couponIsActive" className="text-xs font-medium text-gray-700 cursor-pointer">
+                    Enable this coupon immediately
+                  </label>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={savingCoupon}
+                    className="w-full py-3 bg-[#800000] text-white font-bold uppercase text-xs tracking-widest rounded hover:bg-[#5a0000] transition-colors disabled:opacity-50 cursor-pointer"
+                  >
+                    {savingCoupon ? "Saving..." : editingCouponId ? "Update Coupon" : "Create Coupon"}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Right: List of Coupons */}
+            <div className="lg:col-span-7 bg-white border border-gray-200 rounded-xl overflow-hidden shadow-xs h-fit">
+              <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700">
+                  All Coupons ({coupons.length})
+                </h3>
+                {coupons.length > 0 && (
+                  <button
+                    onClick={handleSeedCoupons}
+                    className="text-[11px] text-[#800000] font-semibold hover:underline"
+                  >
+                    + Add Demo Coupons
+                  </button>
+                )}
+              </div>
+
+              {coupons.length === 0 ? (
+                <div className="p-12 text-center space-y-4">
+                  <div className="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center mx-auto text-[#D4AF37]">
+                    <Tag size={24} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-800">No coupons created yet</h4>
+                    <p className="text-xs text-gray-500 max-w-sm mx-auto mt-1">
+                      Create your first coupon using the form on the left, or seed starter coupons with one click.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleSeedCoupons}
+                    className="px-5 py-2.5 bg-[#800000] text-white rounded text-xs font-bold uppercase tracking-wider hover:bg-[#5a0000] transition-colors cursor-pointer"
+                  >
+                    Seed Starter Coupons (WELCOME10 & FLAT500)
+                  </button>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-gray-50 border-b text-gray-500 uppercase tracking-wider font-semibold text-[10px]">
+                      <tr>
+                        <th className="p-3.5">Code</th>
+                        <th className="p-3.5">Discount</th>
+                        <th className="p-3.5">Rules</th>
+                        <th className="p-3.5">Status</th>
+                        <th className="p-3.5 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {coupons.map((c) => (
+                        <tr key={c.id || c.code} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="p-3.5 font-mono font-bold text-gray-900">
+                            <span className="bg-gray-100 px-2 py-1 rounded text-xs tracking-wider border border-gray-200">
+                              {c.code}
+                            </span>
+                            {c.description && (
+                              <p className="text-[10px] text-gray-400 font-sans font-normal mt-1 max-w-[180px] truncate">
+                                {c.description}
+                              </p>
+                            )}
+                          </td>
+                          <td className="p-3.5">
+                            <span className="inline-flex items-center gap-1 font-bold text-[#800000]">
+                              {c.type === "percentage" ? `${c.value}% OFF` : `₹${c.value} FLAT`}
+                            </span>
+                          </td>
+                          <td className="p-3.5 text-gray-600 text-[11px] space-y-0.5">
+                            {c.minOrder ? (
+                              <div>Min: <span className="font-semibold text-gray-800">₹{c.minOrder}</span></div>
+                            ) : (
+                              <div className="text-gray-400">No min order</div>
+                            )}
+                            {c.maxDiscount ? (
+                              <div className="text-gray-500">Cap: ₹{c.maxDiscount}</div>
+                            ) : null}
+                          </td>
+                          <td className="p-3.5">
+                            <button
+                              onClick={() => handleToggleCoupon(c)}
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                                c.isActive
+                                  ? "bg-green-100 text-green-700 hover:bg-green-200"
+                                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                              }`}
+                              title="Click to toggle status"
+                            >
+                              <span className={`w-1.5 h-1.5 rounded-full ${c.isActive ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                              {c.isActive ? "Active" : "Inactive"}
+                            </button>
+                          </td>
+                          <td className="p-3.5 text-right space-x-2 whitespace-nowrap">
+                            <button
+                              onClick={() => handleEditCoupon(c)}
+                              className="text-gray-500 hover:text-black p-1 transition-colors"
+                              title="Edit coupon"
+                            >
+                              <Pencil size={15} />
+                            </button>
+                            <button
+                              onClick={() => c.id && handleDeleteCoupon(c.id, c.code)}
+                              className="text-red-400 hover:text-red-600 p-1 transition-colors"
+                              title="Delete coupon"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       ) : activeTab === 'settings' ? (
         <div className="bg-white p-6 shadow-sm rounded-sm mb-12">

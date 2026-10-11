@@ -11,8 +11,10 @@ const SANS = { fontFamily: "'DM Sans', sans-serif" } as const;
 const CINZEL = { fontFamily: "'Cinzel', serif" } as const;
 
 export function Checkout() {
-  const { cart, cartTotal, clearCart, addOrder, profile, addAddress, products } = useCart();
+  const { cart, cartTotal, appliedCoupon, discountAmount, clearCart, addOrder, profile, addAddress, products } = useCart();
   
+  const finalPayable = Math.max(0, cartTotal - (discountAmount || 0));
+
   // Checkout flow steps: 'shipping' -> 'payment' -> 'confirmed'
   const [step, setStep] = useState<'shipping' | 'payment' | 'confirmed'>('shipping');
   
@@ -58,7 +60,7 @@ export function Checkout() {
   const handleNextToPayment = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateShippingForm()) {
-      if (cartTotal < 1000 && paymentMethod === "COD") {
+      if (finalPayable < 1000 && paymentMethod === "COD") {
         setPaymentMethod("UPI");
       }
       setStep('payment');
@@ -124,7 +126,10 @@ export function Checkout() {
           }
           return itemData;
         }),
-        total: cartTotal,
+        subtotal: cartTotal,
+        discount: discountAmount || 0,
+        couponCode: appliedCoupon ? appliedCoupon.code : null,
+        total: finalPayable,
         status: "Processing" as const,
         shippingAddress: {
           name,
@@ -411,9 +416,21 @@ export function Checkout() {
                     </div>
                   ))}
                 </div>
-                <div className="border-t border-gray-50 pt-4 flex justify-between items-baseline">
-                  <span className="text-xs text-gray-500">Grand Total</span>
-                  <span className="font-bold text-xl text-[#800000]">Rs. {cartTotal.toLocaleString()}</span>
+                <div className="border-t border-gray-50 pt-4 space-y-2">
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>Subtotal</span>
+                    <span>Rs. {cartTotal.toLocaleString()}</span>
+                  </div>
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between text-xs text-green-600 font-medium">
+                      <span>Discount ({appliedCoupon?.code || "Coupon"})</span>
+                      <span>- Rs. {discountAmount.toLocaleString()}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-baseline pt-1 border-t border-gray-50">
+                    <span className="text-xs text-gray-500">Grand Total</span>
+                    <span className="font-bold text-xl text-[#800000]">Rs. {finalPayable.toLocaleString()}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -433,11 +450,11 @@ export function Checkout() {
               {/* Payment selector row */}
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { id: "COD", label: "Cash on Delivery", desc: cartTotal < 1000 ? "Unavailable for orders under Rs. 1000" : "Pay cash at doorstep" },
+                  { id: "COD", label: "Cash on Delivery", desc: finalPayable < 1000 ? "Unavailable for orders under Rs. 1000" : "Pay cash at doorstep" },
                   { id: "UPI", label: "UPI / QR Scan", desc: "Instant QR Payment" },
                   { id: "CC", label: "Credit Card", desc: "Visa/Mastercard/Amex" }
                 ].map((m) => {
-                  const isDisabled = m.id === "COD" && cartTotal < 1000;
+                  const isDisabled = m.id === "COD" && finalPayable < 1000;
                   return (
                   <button
                     key={m.id}
@@ -532,7 +549,7 @@ export function Checkout() {
                   disabled={isSubmitting}
                   className="bg-[#800000] text-white px-8 py-3.5 rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-[#D4AF37] hover:text-black transition-all shadow-md cursor-pointer disabled:opacity-50"
                 >
-                  {isSubmitting ? "Processing Order..." : `Place Order (Rs. ${cartTotal.toLocaleString()})`}
+                  {isSubmitting ? "Processing Order..." : `Place Order (Rs. ${finalPayable.toLocaleString()})`}
                 </button>
               </div>
             </div>
@@ -598,9 +615,11 @@ export function Checkout() {
                         price: i.price,
                         amount: i.price * i.qty
                       })) || [],
-                      subtotal: placedOrder?.total || cartTotal,
+                      subtotal: placedOrder?.subtotal || placedOrder?.total || cartTotal,
+                      discount: placedOrder?.discount || discountAmount || 0,
+                      couponCode: placedOrder?.couponCode || (appliedCoupon ? appliedCoupon.code : undefined),
                       tax: 0,
-                      total: placedOrder?.total || cartTotal,
+                      total: placedOrder?.total || finalPayable,
                       paymentDetails: paymentMethod === 'COD' ? "Cash on Delivery" : `Paid via ${paymentMethod}`,
                       message: "Thank you for choosing Mijaz Luxury Perfumery.",
                       jobDesc: "Online Order"

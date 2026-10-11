@@ -1,43 +1,93 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../hooks/useCart";
-
-import { ShoppingBag, Minus, Plus, Trash2, ArrowRight, Gift, MapPin, Ticket } from "lucide-react";
+import { db } from "../lib/firebase";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { Coupon } from "../types";
+import { ShoppingBag, Minus, Plus, Trash2, ArrowRight, Gift, MapPin, Ticket, Check, Sparkles } from "lucide-react";
 
 const SANS = { fontFamily: "'DM Sans', sans-serif" } as const;
 const CINZEL = { fontFamily: "'Cinzel', serif" } as const;
 
 export function Cart() {
-  const { cart, updateQty, removeFromCart, cartTotal, products } = useCart();
+  const { cart, updateQty, removeFromCart, cartTotal, products, appliedCoupon, discountAmount, applyCoupon, removeCoupon } = useCart();
   const navigate = useNavigate();
 
   // Promo Code States
   const [promoCode, setPromoCode] = useState("");
-  const [appliedPromo, setAppliedPromo] = useState<string>("");
-  const [discountAmount, setDiscountAmount] = useState<number>(0);
+  const [isApplying, setIsApplying] = useState(false);
   const [promoError, setPromoError] = useState("");
+  const [availableCoupons, setAvailableCoupons] = useState<Coupon[]>([]);
 
-  const handleApplyPromo = (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    const fetchActiveCoupons = async () => {
+      try {
+        const snap = await getDocs(collection(db, "coupons"));
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Coupon)).filter(c => c.isActive);
+        setAvailableCoupons(list);
+      } catch (e) {
+        console.warn("Could not load coupons list", e);
+      }
+    };
+    fetchActiveCoupons();
+  }, []);
+
+  const handleApplyPromo = async (e?: React.FormEvent, customCode?: string) => {
+    if (e) e.preventDefault();
     setPromoError("");
-    const formattedCode = promoCode.trim().toUpperCase();
+    const targetCode = (customCode || promoCode).trim().toUpperCase();
+    if (!targetCode) return;
 
-    if (formattedCode === "WELCOME10") {
-      setAppliedPromo("WELCOME10 (10% Off)");
-      setDiscountAmount(Math.round(cartTotal * 0.1));
-      setPromoCode("");
-    } else if (formattedCode === "MIJAZGIFT") {
-      setAppliedPromo("MIJAZGIFT (Rs. 500 Off)");
-      setDiscountAmount(Math.min(cartTotal, 500));
-      setPromoCode("");
-    } else {
-      setPromoError("Invalid promo code. Try 'WELCOME10' or 'MIJAZGIFT'");
+    setIsApplying(true);
+    try {
+      // 1. Search in Firestore coupons
+      const q = query(collection(db, "coupons"), where("code", "==", targetCode));
+      const snap = await getDocs(q);
+      let matchedCoupon: Coupon | null = null;
+
+      if (!snap.empty) {
+        const docData = snap.docs[0].data() as Omit<Coupon, "id">;
+        matchedCoupon = { id: snap.docs[0].id, ...docData };
+      } else {
+        // Fallback starters
+        if (targetCode === "WELCOME10") {
+          matchedCoupon = { code: "WELCOME10", type: "percentage", value: 10, isActive: true, description: "10% Welcome Discount" };
+        } else if (targetCode === "FLAT500" || targetCode === "MIJAZGIFT") {
+          matchedCoupon = { code: targetCode, type: "fixed", value: 500, isActive: true, description: "Rs. 500 Flat Discount" };
+        }
+      }
+
+      if (!matchedCoupon) {
+        setPromoError(`Coupon code "${targetCode}" is invalid.`);
+        return;
+      }
+
+      const res = applyCoupon(matchedCoupon);
+      if (!res.success) {
+        setPromoError(res.message);
+      } else {
+        setPromoCode("");
+      }
+    } catch (err) {
+      console.error("Error applying coupon:", err);
+      // Local fallback
+      if (targetCode === "WELCOME10") {
+        applyCoupon({ code: "WELCOME10", type: "percentage", value: 10, isActive: true });
+        setPromoCode("");
+      } else if (targetCode === "FLAT500") {
+        applyCoupon({ code: "FLAT500", type: "fixed", value: 500, isActive: true });
+        setPromoCode("");
+      } else {
+        setPromoError("Failed to apply coupon. Please try again.");
+      }
+    } finally {
+      setIsApplying(false);
     }
   };
 
   const handleRemovePromo = () => {
-    setAppliedPromo("");
-    setDiscountAmount(0);
+    removeCoupon();
+    setPromoError("");
   };
 
   const finalTotal = Math.max(0, cartTotal - discountAmount);
@@ -184,26 +234,51 @@ export function Cart() {
                     type="text"
                     placeholder="Enter Code"
                     value={promoCode}
-                    onChange={(e) => setPromoCode(e.target.value)}
-                    className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs outline-hidden focus:border-[#800000] focus:bg-white"
+                    onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                    disabled={isApplying || !!appliedCoupon}
+                    className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs outline-hidden focus:border-[#800000] focus:bg-white uppercase font-mono tracking-wider disabled:opacity-50"
                   />
                   <button
                     type="submit"
-                    className="bg-[#800000] text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-black transition-all cursor-pointer"
+                    disabled={isApplying || !!appliedCoupon || !promoCode.trim()}
+                    className="bg-[#800000] text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-black transition-all cursor-pointer disabled:opacity-50"
                   >
-                    Apply
+                    {isApplying ? "..." : "Apply"}
                   </button>
                 </form>
-                {promoError && <p className="text-red-500 text-[10px] font-semibold">{promoError}</p>}
-                {appliedPromo && (
-                  <div className="flex justify-between items-center bg-green-50 border border-green-150 p-2.5 rounded-lg text-[10px] text-green-700 font-semibold mt-2">
-                    <span>Active: {appliedPromo}</span>
-                    <button onClick={handleRemovePromo} className="text-red-500 hover:text-red-700 font-bold text-xs ml-2">×</button>
+                {promoError && <p className="text-red-500 text-[10px] font-semibold mb-2">{promoError}</p>}
+                {appliedCoupon && (
+                  <div className="flex justify-between items-center bg-green-50 border border-green-200 p-2.5 rounded-lg text-xs text-green-800 font-medium mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono font-bold bg-green-200/60 px-1.5 py-0.5 rounded text-[11px] text-green-900">{appliedCoupon.code}</span>
+                      <span>({appliedCoupon.type === "percentage" ? `${appliedCoupon.value}% OFF` : `₹${appliedCoupon.value} FLAT`})</span>
+                    </div>
+                    <button onClick={handleRemovePromo} className="text-red-500 hover:text-red-700 font-bold text-xs ml-2 cursor-pointer" title="Remove coupon">Remove</button>
                   </div>
                 )}
-                <div className="text-[9px] text-gray-400 mt-2 font-medium">
-                  Try "WELCOME10" for 10% discount or "MIJAZGIFT" for Rs. 500 off.
-                </div>
+                {availableCoupons.length > 0 && !appliedCoupon && (
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-1.5">Available Offers:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {availableCoupons.map((c) => (
+                        <button
+                          key={c.id || c.code}
+                          type="button"
+                          onClick={() => handleApplyPromo(undefined, c.code)}
+                          className="inline-flex items-center gap-1 text-[10px] bg-amber-50/80 hover:bg-amber-100/80 border border-amber-200/80 text-amber-900 px-2 py-1 rounded-md transition-colors cursor-pointer font-medium"
+                        >
+                          <span className="font-mono font-bold">{c.code}</span>
+                          <span className="text-[9px] text-amber-700">({c.type === "percentage" ? `${c.value}%` : `₹${c.value}`})</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {availableCoupons.length === 0 && !appliedCoupon && (
+                  <div className="text-[9px] text-gray-400 mt-2 font-medium">
+                    Try "WELCOME10" for 10% discount or "FLAT500" for Rs. 500 off.
+                  </div>
+                )}
               </div>
 
               {/* Order total card */}
