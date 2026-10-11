@@ -59,7 +59,8 @@ export function ProductCard({ product }: ProductCardProps) {
       ? `Rs. ${minSale.toLocaleString()}`
       : `Rs. ${minSale.toLocaleString()} - ${maxSale.toLocaleString()}`;
 
-  const displayImage = product.img || perfume50ml;
+  const displayImage = product.img || (product.images && product.images[0]) || perfume50ml;
+  const secondaryImage = (product.images && product.images.length > 1) ? product.images[1] : null;
 
   const isOutOfStock = product.stock ? product.stock[selectedSize] <= 0 : false;
 
@@ -83,8 +84,17 @@ export function ProductCard({ product }: ProductCardProps) {
         <img
           src={displayImage}
           alt={product.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+          className={`w-full h-full object-cover transition-all duration-700 ease-out ${
+            secondaryImage ? "group-hover:opacity-0 group-hover:scale-105" : "group-hover:scale-105"
+          }`}
         />
+        {secondaryImage && (
+          <img
+            src={secondaryImage}
+            alt={`${product.name} alternate view`}
+            className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 ease-out"
+          />
+        )}
 
         {/* Sale Badge - only show if product is actually discounted */}
         {isOnSale && (

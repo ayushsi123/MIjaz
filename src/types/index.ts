@@ -26,6 +26,7 @@ export interface Product {
   stock?: Record<string, number>;
   notes: string[];
   img: string;
+  images?: string[];
   description: string;
   reviews?: { name: string; rating: number; date: string; comment: string }[];
 }

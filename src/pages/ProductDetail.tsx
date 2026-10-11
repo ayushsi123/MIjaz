@@ -4,7 +4,7 @@ import { getRelatedProducts } from "../data/products";
 import { useCart } from "../hooks/useCart";
 import { Product } from "../types";
 import { ProductCard } from "../components/ProductCard";
-import { ShoppingBag, ChevronRight, Award, Truck, ShieldCheck, Heart, Sparkles } from "lucide-react";
+import { ShoppingBag, ChevronRight, ChevronLeft, Award, Truck, ShieldCheck, Heart, Sparkles } from "lucide-react";
 import perfume50ml from "../imports/perfume-50ml.jpg";
 import { db } from "../lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
@@ -55,7 +55,17 @@ export function ProductDetail() {
     );
   }
 
-  const displayImage = product.img || perfume50ml;
+  const productImages = (product.images && product.images.length > 0)
+    ? product.images
+    : (product.img ? [product.img] : [perfume50ml]);
+
+  const [activeImgIndex, setActiveImgIndex] = useState(0);
+
+  useEffect(() => {
+    setActiveImgIndex(0);
+  }, [product?.id]);
+
+  const currentImage = productImages[activeImgIndex] || productImages[0];
 
   const isOutOfStock = product.stock ? product.stock[selectedSize] <= 0 : false;
 
@@ -106,16 +116,64 @@ export function ProductDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-20">
           {/* Left Column: Image Gallery (40% width) */}
           <div className="lg:col-span-5 space-y-4">
-            <div className="relative aspect-3/4 rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-md">
+            <div className="relative aspect-3/4 rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-md group">
               <img
-                src={displayImage}
-                alt={product.name}
-                className="w-full h-full object-cover"
+                src={currentImage}
+                alt={`${product.name} view ${activeImgIndex + 1}`}
+                className="w-full h-full object-cover transition-opacity duration-300"
               />
-              <span className="absolute top-4 left-4 bg-[#D4AF37] text-black text-[9px] font-bold px-3 py-1 uppercase tracking-widest rounded-md">
+              <span className="absolute top-4 left-4 bg-[#D4AF37] text-black text-[9px] font-bold px-3 py-1 uppercase tracking-widest rounded-md z-10">
                 Extraits de Parfum
               </span>
+
+              {/* Prev / Next Arrows for multiple photos */}
+              {productImages.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setActiveImgIndex((prev) => (prev === 0 ? productImages.length - 1 : prev - 1))}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-gray-800 flex items-center justify-center shadow-md transition-all opacity-0 group-hover:opacity-100 hover:scale-105 z-10"
+                    title="Previous photo"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveImgIndex((prev) => (prev === productImages.length - 1 ? 0 : prev + 1))}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-gray-800 flex items-center justify-center shadow-md transition-all opacity-0 group-hover:opacity-100 hover:scale-105 z-10"
+                    title="Next photo"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+
+                  {/* Photo Counter Pill */}
+                  <span className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-xs text-white text-[10px] font-semibold px-2.5 py-1 rounded-full z-10">
+                    {activeImgIndex + 1} / {productImages.length}
+                  </span>
+                </>
+              )}
             </div>
+
+            {/* Thumbnail Gallery Strip (if more than 1 photo) */}
+            {productImages.length > 1 && (
+              <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-thin">
+                {productImages.map((img, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setActiveImgIndex(idx)}
+                    className={`relative w-16 h-20 sm:w-20 sm:h-24 rounded-xl overflow-hidden border-2 transition-all shrink-0 bg-white ${
+                      activeImgIndex === idx
+                        ? "border-[#800000] ring-2 ring-[#800000]/20 shadow-sm scale-102"
+                        : "border-gray-200 opacity-60 hover:opacity-100 hover:border-gray-400"
+                    }`}
+                    title={`View photo ${idx + 1}`}
+                  >
+                    <img src={img} alt={`${product.name} thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
             
             {/* Auxiliary visual notes */}
             <div className="grid grid-cols-3 gap-3">

@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { NOTES } from "../data/products";
 
 import { generateInvoicePDF } from "../lib/pdfGenerator";
-import { Download, X, Pencil, Tag, Percent, Plus, Check, Trash2, Power } from "lucide-react";
+import { Download, X, Pencil, Tag, Percent, Plus, Check, Trash2, Power, Star, UploadCloud } from "lucide-react";
 import { Coupon } from "../types";
 import heroBanner from "../imports/hero.png";
 import categoryMen from "../imports/category-men.jpg";
@@ -54,6 +54,7 @@ export function Admin() {
   const [wearGuide, setWearGuide] = useState("");
   const [giftingDetails, setGiftingDetails] = useState("");
   const [imgUrl, setImgUrl] = useState("");
+  const [imgUrls, setImgUrls] = useState<string[]>([]);
   const [category, setCategory] = useState("Perfume");
   const [gender, setGender] = useState("Unisex");
   const [occasion, setOccasion] = useState("Any");
@@ -450,12 +451,8 @@ export function Admin() {
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    setUploading(true);
-    try {
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = (event) => {
@@ -463,26 +460,74 @@ export function Admin() {
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement("canvas");
-          const MAX_WIDTH = 600;
-          const scaleSize = MAX_WIDTH / img.width;
-          canvas.width = MAX_WIDTH;
-          canvas.height = img.height * scaleSize;
+          const MAX_WIDTH = 800;
+          const scaleSize = img.width > MAX_WIDTH ? MAX_WIDTH / img.width : 1;
+          canvas.width = Math.round(img.width * scaleSize);
+          canvas.height = Math.round(img.height * scaleSize);
           
           const ctx = canvas.getContext("2d");
           ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
           
-          // Compress to JPEG with 0.8 quality
-          const base64Url = canvas.toDataURL("image/jpeg", 0.8);
-          setImgUrl(base64Url);
-          toast.success("Image processed and ready!");
-          setUploading(false);
+          // Compress to JPEG with 0.75 quality (~40-50 KB per photo)
+          const base64Url = canvas.toDataURL("image/jpeg", 0.75);
+          resolve(base64Url);
         };
+        img.onerror = reject;
       };
+      reader.onerror = reject;
+    });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    
+    setUploading(true);
+    const toastId = toast.loading(`Processing ${files.length} photo${files.length > 1 ? 's' : ''}...`);
+    try {
+      const compressedList: string[] = [];
+      for (const file of files) {
+        try {
+          const res = await compressImage(file);
+          compressedList.push(res);
+        } catch (err) {
+          console.error("Error processing file", file.name, err);
+        }
+      }
+      
+      if (compressedList.length > 0) {
+        setImgUrls(prev => {
+          const updated = [...prev, ...compressedList];
+          setImgUrl(updated[0] || "");
+          return updated;
+        });
+        toast.success(`Added ${compressedList.length} photo${compressedList.length > 1 ? 's' : ''}!`, { id: toastId });
+      } else {
+        toast.error("Could not process selected image(s).", { id: toastId });
+      }
     } catch (err: any) {
-      toast.error("Failed to process image.");
+      toast.error("Failed to process images.", { id: toastId });
       console.error(err);
+    } finally {
       setUploading(false);
+      e.target.value = "";
     }
+  };
+
+  const handleRemovePhoto = (index: number) => {
+    const updated = imgUrls.filter((_, i) => i !== index);
+    setImgUrls(updated);
+    setImgUrl(updated[0] || "");
+  };
+
+  const handleSetCoverPhoto = (index: number) => {
+    if (index === 0) return;
+    const target = imgUrls[index];
+    const rest = imgUrls.filter((_, i) => i !== index);
+    const updated = [target, ...rest];
+    setImgUrls(updated);
+    setImgUrl(updated[0] || "");
+    toast.success("Cover photo updated!");
   };
 
   const toggleNote = (note: string) => {
@@ -518,6 +563,9 @@ export function Admin() {
         finalStock["50ml"] = Number(stock50ml);
       }
 
+      const finalImages = imgUrls.length > 0 ? imgUrls : (imgUrl ? [imgUrl] : []);
+      const primaryImg = finalImages[0] || "";
+
       const productData = {
         name,
         description,
@@ -532,7 +580,8 @@ export function Admin() {
         salePrices: finalSalePrices,
         stock: finalStock,
         notes: selectedNotes,
-        img: imgUrl,
+        img: primaryImg,
+        images: finalImages,
       };
 
       if (editingProductId) {
@@ -557,6 +606,7 @@ export function Admin() {
       setWearGuide("");
       setGiftingDetails("");
       setImgUrl("");
+      setImgUrls([]);
       setSelectedNotes([]);
       fetchProducts();
     } catch (error: any) {
@@ -606,7 +656,11 @@ export function Admin() {
     setNarrative(p.narrative || "");
     setWearGuide(p.wearGuide || "");
     setGiftingDetails(p.giftingDetails || "");
-    setImgUrl(p.img || "");
+    const existingImages: string[] = Array.isArray(p.images) && p.images.length > 0
+      ? p.images
+      : (p.img ? [p.img] : []);
+    setImgUrls(existingImages);
+    setImgUrl(existingImages[0] || p.img || "");
     setCategory(p.category || "Perfume");
     setGender(p.gender || "Unisex");
     setOccasion(p.occasion || "Any");
@@ -831,53 +885,104 @@ export function Admin() {
           <h2 className="text-xl font-semibold mb-6">{editingProductId ? "Edit Product" : "Add New Product"}</h2>
           <form onSubmit={handleAddProduct} className="space-y-6">
             
-            {/* Image Upload Area */}
+            {/* Multiple Product Photos Area */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Product Image</label>
-              <div className="border-2 border-dashed border-gray-300 p-6 text-center cursor-pointer hover:bg-gray-100 transition relative">
-                {imgUrl ? (
-                  <div className="relative inline-block w-full">
-                    <img src={imgUrl} alt="Preview" className="mx-auto h-32 object-contain rounded" />
-                    <button 
-                      type="button" 
-                      onClick={() => setImgUrl("")}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 shadow-md z-20"
-                      title="Remove image"
-                    >
-                      <X size={14} />
-                    </button>
-                    {/* Invisible file input over the image for direct changing */}
-                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/0 hover:bg-black/40 transition-colors cursor-pointer rounded group">
-                      <div className="flex flex-col items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                        <div className="bg-white/90 p-2 rounded-full text-black shadow-lg">
-                          <Pencil size={16} />
-                        </div>
-                      </div>
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={handleImageUpload} 
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        disabled={uploading}
-                        title="Click to change image"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="text-gray-500 text-sm flex flex-col items-center justify-center h-full min-h-[8rem]">
-                      {uploading ? "Uploading..." : "Click or drag to upload"}
-                    </div>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={handleImageUpload} 
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      disabled={uploading}
-                    />
-                  </>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-700">
+                  Product Photos ({imgUrls.length})
+                </label>
+                {imgUrls.length > 0 && (
+                  <span className="text-[10px] text-[#800000] font-bold">
+                    ★ First photo is the main cover
+                  </span>
                 )}
               </div>
+
+              {imgUrls.length === 0 ? (
+                <label className="border-2 border-dashed border-gray-300 p-8 text-center cursor-pointer hover:bg-gray-100 hover:border-[#800000] transition rounded-lg flex flex-col items-center justify-center min-h-[140px] group block">
+                  <div className="w-12 h-12 rounded-full bg-[#800000]/10 flex items-center justify-center mb-3 group-hover:bg-[#800000]/20 transition">
+                    <UploadCloud className="text-[#800000]" size={24} />
+                  </div>
+                  <span className="text-sm font-semibold text-gray-800 mb-1">
+                    {uploading ? "Processing Photos..." : "Upload Product Photos"}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    Click to select 1 or multiple photos (JPG, PNG, WEBP)
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    disabled={uploading}
+                  />
+                </label>
+              ) : (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {imgUrls.map((url, idx) => (
+                      <div
+                        key={idx}
+                        className={`relative aspect-square rounded-lg overflow-hidden border-2 bg-white group shadow-xs ${
+                          idx === 0 ? "border-[#800000] ring-2 ring-[#800000]/20" : "border-gray-200"
+                        }`}
+                      >
+                        <img src={url} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
+
+                        {/* Cover Badge */}
+                        {idx === 0 ? (
+                          <span className="absolute top-1.5 left-1.5 bg-[#800000] text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm flex items-center gap-1 z-10">
+                            <Star size={10} className="fill-white" /> COVER
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleSetCoverPhoto(idx)}
+                            className="absolute top-1.5 left-1.5 bg-black/80 hover:bg-[#800000] text-white text-[9px] font-semibold px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shadow-sm z-10"
+                            title="Set as main cover photo"
+                          >
+                            <Star size={10} /> Set Cover
+                          </button>
+                        )}
+
+                        {/* Delete Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePhoto(idx)}
+                          className="absolute top-1.5 right-1.5 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 opacity-90 hover:opacity-100 transition shadow-sm z-10"
+                          title="Remove photo"
+                        >
+                          <X size={12} />
+                        </button>
+
+                        <div className="absolute bottom-1 left-1.5 text-[9px] font-semibold text-white/90 bg-black/60 px-1 rounded z-10">
+                          #{idx + 1}
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Add More Photos Tile */}
+                    <label className="aspect-square border-2 border-dashed border-gray-300 rounded-lg hover:border-[#800000] hover:bg-gray-50 cursor-pointer flex flex-col items-center justify-center p-3 text-center transition group">
+                      <Plus size={20} className="text-gray-400 group-hover:text-[#800000] mb-1 transition" />
+                      <span className="text-[11px] font-bold text-gray-600 group-hover:text-[#800000] transition">
+                        Add More
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        disabled={uploading}
+                      />
+                    </label>
+                  </div>
+                  <p className="text-[11px] text-gray-500">
+                    💡 <b>Tip:</b> Click <b>"Set Cover"</b> on any photo to make it the primary thumbnail shown on the shop page.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div>
@@ -1042,9 +1147,9 @@ export function Admin() {
             <div className="flex gap-2">
               <button 
                 type="submit" 
-                disabled={uploading || !imgUrl}
+                disabled={uploading || (imgUrls.length === 0 && !imgUrl)}
                 className={`flex-1 text-white py-3 uppercase tracking-widest text-xs font-bold transition-colors ${
-                  uploading || !imgUrl ? "bg-gray-400 cursor-not-allowed" : "bg-[#800000] hover:bg-[#5a0000]"
+                  uploading || (imgUrls.length === 0 && !imgUrl) ? "bg-gray-400 cursor-not-allowed" : "bg-[#800000] hover:bg-[#5a0000]"
                 }`}
               >
                 {uploading ? "Uploading..." : editingProductId ? "Update" : "Save"}
@@ -1065,6 +1170,7 @@ export function Admin() {
                     setWearGuide("");
                     setGiftingDetails("");
                     setImgUrl("");
+                    setImgUrls([]);
                     setSelectedNotes([]);
                   }}
                   className="flex-1 border border-gray-300 py-3 uppercase tracking-widest text-xs font-bold hover:bg-gray-100 transition-colors"
@@ -1094,8 +1200,15 @@ export function Admin() {
                   {products.map(p => (
                     <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                       <td className="p-4 font-medium flex items-center gap-3">
-                        {p.img && <img src={p.img} alt={p.name} className="w-8 h-10 object-cover rounded" />}
-                        {p.name}
+                        {p.img && <img src={p.img} alt={p.name} className="w-9 h-11 object-cover rounded shadow-xs" />}
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-gray-900">{p.name}</span>
+                          {Array.isArray(p.images) && p.images.length > 1 && (
+                            <span className="text-[10px] text-gray-500 font-medium flex items-center gap-1 mt-0.5">
+                              📷 {p.images.length} photos
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="p-4">
                         {(() => {
