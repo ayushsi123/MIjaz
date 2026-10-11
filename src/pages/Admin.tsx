@@ -333,15 +333,37 @@ export function Admin() {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      toast.loading("Uploading image...", { id: "upload" });
-      const storageRef = ref(storage, `homepage/${Date.now()}-${file.name}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
-      setHomepageSettings(prev => ({ ...prev, [key]: url }));
-      toast.success("Image uploaded", { id: "upload" });
+      toast.loading("Processing image...", { id: "upload" });
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const MAX_WIDTH = 1200;
+          const scaleSize = img.width > MAX_WIDTH ? MAX_WIDTH / img.width : 1;
+          canvas.width = Math.round(img.width * scaleSize);
+          canvas.height = Math.round(img.height * scaleSize);
+
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          // Compress to JPEG with 0.78 quality to keep document lean
+          const base64Url = canvas.toDataURL("image/jpeg", 0.78);
+          setHomepageSettings(prev => ({ ...prev, [key]: base64Url }));
+          toast.success("Image selected! Click 'Save Settings' below to apply.", { id: "upload" });
+        };
+        img.onerror = () => {
+          toast.error("Failed to load image file.", { id: "upload" });
+        };
+      };
+      reader.onerror = () => {
+        toast.error("Failed to read image file.", { id: "upload" });
+      };
     } catch (error) {
-      console.error("Error uploading image:", error);
-      toast.error("Upload failed", { id: "upload" });
+      console.error("Error processing image:", error);
+      toast.error("Failed to process image", { id: "upload" });
     }
   };
 
