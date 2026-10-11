@@ -4,13 +4,21 @@ import { getRelatedProducts } from "../data/products";
 import { useCart } from "../hooks/useCart";
 import { Product } from "../types";
 import { ProductCard } from "../components/ProductCard";
-import { ShoppingBag, ChevronRight, ChevronLeft, Award, Truck, ShieldCheck, Heart, Sparkles } from "lucide-react";
+import { ShoppingBag, ChevronRight, ChevronLeft, Award, Truck, ShieldCheck, Heart, Sparkles, Star } from "lucide-react";
 import perfume50ml from "../imports/perfume-50ml.jpg";
 import { db } from "../lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 
 const SANS = { fontFamily: "'DM Sans', sans-serif" } as const;
 const CINZEL = { fontFamily: "'Cinzel', serif" } as const;
+
+const RATING_LABELS: Record<number, string> = {
+  1: "1 Star — Poor",
+  2: "2 Stars — Weak Longevity",
+  3: "3 Stars — Decent",
+  4: "4 Stars — High Quality",
+  5: "5 Stars — Exquisite"
+};
 
 export function ProductDetail() {
   const { id } = useParams<{ id: string }>();
@@ -24,6 +32,7 @@ export function ProductDetail() {
   const [related, setRelated] = useState<Product[]>([]);
   const [reviewName, setReviewName] = useState("");
   const [reviewRating, setReviewRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const defaultReviews: any[] = [];
   
@@ -377,18 +386,37 @@ export function ProductDetail() {
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-gray-400 uppercase font-semibold block mb-1">Rating</label>
-                  <select
-                    value={reviewRating}
-                    onChange={(e) => setReviewRating(Number(e.target.value))}
-                    className="w-full bg-white border border-gray-200 px-3 py-2 rounded-lg text-xs outline-hidden focus:border-[#800000]"
-                  >
-                    <option value={5}>5 Stars - Exquisite</option>
-                    <option value={4}>4 Stars - High Quality</option>
-                    <option value={3}>3 Stars - Decent</option>
-                    <option value={2}>2 Stars - Weak Longevity</option>
-                    <option value={1}>1 Star - Poor</option>
-                  </select>
+                  <label className="text-[10px] text-gray-400 uppercase font-semibold block mb-1.5">Rating</label>
+                  <div className="flex items-center justify-between gap-3 bg-white border border-gray-200 px-3.5 py-2.5 rounded-lg">
+                    <div className="flex items-center gap-1.5">
+                      {[1, 2, 3, 4, 5].map((star) => {
+                        const active = star <= (hoverRating || reviewRating);
+                        return (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setReviewRating(star)}
+                            onMouseEnter={() => setHoverRating(star)}
+                            onMouseLeave={() => setHoverRating(0)}
+                            className="p-0.5 transition-transform hover:scale-125 cursor-pointer focus:outline-hidden"
+                            title={`${star} Star${star > 1 ? "s" : ""}`}
+                          >
+                            <Star
+                              size={22}
+                              className={`transition-colors ${
+                                active
+                                  ? "fill-[#D4AF37] text-[#D4AF37]"
+                                  : "text-gray-200 hover:text-gray-300"
+                              }`}
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <span className="text-xs font-semibold text-gray-700 select-none pl-3 border-l border-gray-150 truncate">
+                      {RATING_LABELS[hoverRating || reviewRating]}
+                    </span>
+                  </div>
                 </div>
                 <div>
                   <label className="text-[10px] text-gray-400 uppercase font-semibold block mb-1">Your Review</label>
